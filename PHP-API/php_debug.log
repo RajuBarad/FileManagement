@@ -1,0 +1,24 @@
+2025-12-30 03:53:24 - --- New Login Request ---
+2025-12-30 03:53:24 - Raw Input: {"username":"admin","password":"admin"}
+2025-12-30 03:53:24 - Username: admin
+2025-12-30 03:53:24 - User Found. ID: 1
+2025-12-30 03:53:24 - Password Mismatch.
+2025-12-30 03:57:32 - --- New Login Request ---
+2025-12-30 03:57:32 - Raw Input: {"username":"admin","password":"admin"}
+2025-12-30 03:57:32 - Username: admin
+2025-12-30 03:57:32 - User Found. ID: 1
+2025-12-30 03:57:32 - Password Mismatch.
+2025-12-30 03:58:47 - --- New Login Request ---
+2025-12-30 03:58:47 - Raw Input: {"username":"admin","password":"password"}
+2025-12-30 03:58:47 - Username: admin
+2025-12-30 03:58:47 - User Found. ID: 1
+2025-12-30 03:58:47 - Password Match.
+2025-12-30 04:00:18 - --- New Login Request ---
+2025-12-30 04:00:18 - Raw Input: {"username":"admin","password":"password"}
+2025-12-30 04:00:18 - Username: admin
+2025-12-30 04:00:18 - User Found. ID: 1
+2025-12-30 04:00:18 - Password Match.
+2025-12-30 04:01:11 - --- New Login Request ---
+2025-12-30 04:01:11 - Raw Input: {"username":"sdf","password":"sdf"}
+2025-12-30 04:01:11 - Username: sdf
+2025-12-30 04:01:11 - User Not Found via SQL.

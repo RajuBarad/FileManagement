@@ -1,0 +1,11 @@
+2025-12-30 04:49:23 - Breadcrumb Request. ID: 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+Result: Array
+(
+    [0] => Array
+        (
+            [id] => 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+            [name] => test
+        )
+
+)
+

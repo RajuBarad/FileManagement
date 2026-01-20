@@ -1,0 +1,712 @@
+2025-12-30 04:12:55 - Upload Request for user 1
+Array
+(
+    [file] => Array
+        (
+            [name] => TrueSys Detail.txt
+            [type] => 
+            [tmp_name] => 
+            [error] => 6
+            [size] => 0
+        )
+
+)
+Move Uploaded File Failed.
+2025-12-30 04:14:34 - Upload Request for user 1
+Array
+(
+    [file] => Array
+        (
+            [name] => TrueSys Detail.txt
+            [type] => 
+            [tmp_name] => 
+            [error] => 6
+            [size] => 0
+        )
+
+)
+Move Uploaded File Failed.
+2025-12-30 04:16:38 - Upload Request for user 1
+Array
+(
+    [file] => Array
+        (
+            [name] => 7588318925984639.pdf
+            [type] => 
+            [tmp_name] => 
+            [error] => 6
+            [size] => 0
+        )
+
+)
+Move Uploaded File Failed.
+2025-12-30 04:17:38 - Upload Request for user 1
+Array
+(
+    [file] => Array
+        (
+            [name] => 7588318925984639.pdf
+            [type] => application/pdf
+            [tmp_name] => C:\Windows\Temp\php1606.tmp
+            [error] => 0
+            [size] => 549183
+        )
+
+)
+2025-12-30 04:19:52 - Upload Request for user 1
+Array
+(
+    [file] => Array
+        (
+            [name] => 7588318925984639 (1).pdf
+            [type] => application/pdf
+            [tmp_name] => C:\Windows\Temp\php24E3.tmp
+            [error] => 0
+            [size] => 549183
+        )
+
+)
+2025-12-30 04:22:03 - Upload Request for user 1
+Array
+(
+    [file] => Array
+        (
+            [name] => Trade Blotter.pdf
+            [type] => application/pdf
+            [tmp_name] => C:\Windows\Temp\php23BF.tmp
+            [error] => 0
+            [size] => 139145
+        )
+
+)
+2025-12-30 04:22:23 - Upload Request for user 1
+Array
+(
+    [file] => Array
+        (
+            [name] => 7588318925984639 (1).pdf
+            [type] => application/pdf
+            [tmp_name] => C:\Windows\Temp\php7106.tmp
+            [error] => 0
+            [size] => 549183
+        )
+
+)
+2025-12-30 04:26:10 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+Array
+(
+    [file] => Array
+        (
+            [name] => Trade Blotter.pdf
+            [type] => application/pdf
+            [tmp_name] => C:\Windows\Temp\phpE6A4.tmp
+            [error] => 0
+            [size] => 139145
+        )
+
+)
+2025-12-30 04:28:41 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+Array
+(
+    [file] => Array
+        (
+            [name] => 7588318925984639.pdf
+            [type] => application/pdf
+            [tmp_name] => C:\Windows\Temp\php3420.tmp
+            [error] => 0
+            [size] => 549183
+        )
+
+)
+2025-12-30 04:29:48 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+Array
+(
+    [file] => Array
+        (
+            [name] => 7588318925984639 (1).pdf
+            [type] => application/pdf
+            [tmp_name] => C:\Windows\Temp\php3C96.tmp
+            [error] => 0
+            [size] => 549183
+        )
+
+)
+2025-12-30 04:32:05 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 1
+)
+
+Array
+(
+    [file] => Array
+        (
+            [name] => 7588318925984639.pdf
+            [type] => application/pdf
+            [tmp_name] => C:\Windows\Temp\php515E.tmp
+            [error] => 0
+            [size] => 549183
+        )
+
+)
+2025-12-30 04:40:19 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 7D7A332B-A0CF-4D9C-A6DD-30CE836F8878
+)
+
+2025-12-30 04:53:56 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+)
+
+2025-12-30 04:54:06 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 0C701DC7-F538-407D-9BA5-663A469C0AF9
+)
+
+2025-12-30 04:54:25 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2025-12-30 05:14:32 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+)
+
+2025-12-30 11:32:23 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2025-12-31 12:05:22 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-01 12:27:57 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-01 12:31:17 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-02 04:27:54 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:27:54 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:28:32 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:28:32 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:30:49 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:30:49 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:30:50 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:30:50 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:33:01 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:33:01 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:33:01 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:33:01 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:44:26 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:44:26 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:44:26 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:44:26 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 04:45:12 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-02 04:45:12 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-02 04:51:15 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData (1)
+)
+
+2026-01-02 04:51:15 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData (1)
+)
+
+2026-01-02 04:51:15 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData (1)
+)
+
+2026-01-02 04:51:15 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData (1)
+)
+
+2026-01-02 04:51:33 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-02 04:51:33 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-02 05:04:09 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-02 05:04:09 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-02 05:04:23 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [parentId] => 07AE9F78-715D-48BB-85BB-89C59058FE08
+)
+
+2026-01-02 05:04:23 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 07AE9F78-715D-48BB-85BB-89C59058FE08
+)
+
+2026-01-02 05:05:30 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [parentId] => 07AE9F78-715D-48BB-85BB-89C59058FE08
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:05:30 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 07AE9F78-715D-48BB-85BB-89C59058FE08
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:05:30 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [parentId] => 07AE9F78-715D-48BB-85BB-89C59058FE08
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:05:30 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 07AE9F78-715D-48BB-85BB-89C59058FE08
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:06:09 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [parentId] => FFC23D31-A3A6-4353-BEE5-63F2DD6B781F
+)
+
+2026-01-02 05:06:09 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => FFC23D31-A3A6-4353-BEE5-63F2DD6B781F
+)
+
+2026-01-02 05:06:24 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:06:24 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:06:24 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:06:24 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:06:35 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [parentId] => 3951E044-506A-4B2B-9AC7-01AC7AB90651
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:06:35 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 3951E044-506A-4B2B-9AC7-01AC7AB90651
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:06:35 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [parentId] => 3951E044-506A-4B2B-9AC7-01AC7AB90651
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:06:35 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 3951E044-506A-4B2B-9AC7-01AC7AB90651
+    [relativePath] => RajkotData
+)
+
+2026-01-02 05:10:14 - RAW POST REQ: Array
+(
+)
+
+Incomplete Data. POST: Array
+(
+)
+ FILES: Array
+(
+)
+
+2026-01-02 05:10:42 - RAW POST REQ: Array
+(
+)
+
+Incomplete Data. POST: Array
+(
+)
+ FILES: Array
+(
+)
+
+2026-01-02 05:12:50 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [parentId] => 3951E044-506A-4B2B-9AC7-01AC7AB90651
+)
+
+2026-01-02 05:12:50 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 3951E044-506A-4B2B-9AC7-01AC7AB90651
+)
+
+2026-01-02 07:50:02 - RAW POST REQ: Array
+(
+    [ownerId] => 2
+    [parentId] => 3951E044-506A-4B2B-9AC7-01AC7AB90651
+)
+
+2026-01-02 07:50:02 - Upload Request for user 2
+POST Data: Array
+(
+    [ownerId] => 2
+    [parentId] => 3951E044-506A-4B2B-9AC7-01AC7AB90651
+)
+
+2026-01-02 08:06:36 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [existingFileId] => 0071AB26-330F-490C-AB32-AA728E6DE0DE
+)
+
+2026-01-02 08:06:36 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [existingFileId] => 0071AB26-330F-490C-AB32-AA728E6DE0DE
+)
+
+2026-01-02 09:09:26 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [parentId] => 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+)
+
+2026-01-02 09:09:26 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [parentId] => 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+)
+
+2026-01-02 09:17:17 - RAW POST REQ: Array
+(
+    [ownerId] => 4
+)
+
+2026-01-02 09:17:17 - Upload Request for user 4
+POST Data: Array
+(
+    [ownerId] => 4
+)
+
+2026-01-02 09:18:29 - RAW POST REQ: Array
+(
+    [ownerId] => 4
+    [parentId] => 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+)
+
+2026-01-02 09:18:29 - Upload Request for user 4
+POST Data: Array
+(
+    [ownerId] => 4
+    [parentId] => 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+)
+
+2026-01-02 09:19:13 - RAW POST REQ: Array
+(
+    [ownerId] => 2
+    [parentId] => 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+)
+
+2026-01-02 09:19:13 - Upload Request for user 2
+POST Data: Array
+(
+    [ownerId] => 2
+    [parentId] => 56E344B4-607F-4555-9AE0-CF7B4AD824F8
+)
+
+2026-01-03 06:36:34 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+    [existingFileId] => 360F7CD4-2E74-47DA-876F-1D2BECC9B2A2
+)
+
+2026-01-03 06:36:34 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+    [existingFileId] => 360F7CD4-2E74-47DA-876F-1D2BECC9B2A2
+)
+
+2026-01-04 14:38:25 - RAW POST REQ: Array
+(
+)
+
+POST Size Violation. Content-Length: 68, post_max_size: 200M
+2026-01-04 14:38:45 - RAW POST REQ: Array
+(
+)
+
+POST Size Violation. Content-Length: 68, post_max_size: 200M
+2026-01-04 14:39:20 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-04 14:39:20 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-04 14:40:11 - RAW POST REQ: Array
+(
+)
+
+2026-01-04 14:46:48 - RAW POST REQ: Array
+(
+)
+
+2026-01-04 14:49:12 - RAW POST REQ: Array
+(
+)
+
+2026-01-04 14:49:30 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-04 14:49:30 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-04 17:58:43 - RAW POST REQ: Array
+(
+)
+
+2026-01-04 18:01:18 - RAW POST REQ: Array
+(
+)
+
+2026-01-04 18:02:38 - RAW POST REQ: Array
+(
+)
+
+2026-01-04 18:02:47 - RAW POST REQ: Array
+(
+)
+
+2026-01-04 18:02:59 - RAW POST REQ: Array
+(
+)
+
+2026-01-04 18:03:57 - RAW POST REQ: Array
+(
+    [ownerId] => 2
+    [parentId] => C0D9A663-35CE-4C96-AB33-1EC4BE48A536
+)
+
+2026-01-04 18:03:57 - Upload Request for user 2
+POST Data: Array
+(
+    [ownerId] => 2
+    [parentId] => C0D9A663-35CE-4C96-AB33-1EC4BE48A536
+)
+
+2026-01-05 17:19:47 - RAW POST REQ: Array
+(
+    [ownerId] => 1
+)
+
+2026-01-05 17:19:47 - Upload Request for user 1
+POST Data: Array
+(
+    [ownerId] => 1
+)
+
