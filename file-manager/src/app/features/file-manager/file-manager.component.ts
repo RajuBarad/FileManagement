@@ -1,5 +1,6 @@
 import { Component, OnInit, inject, signal, computed, ViewChild, HostListener, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Dialog, DialogModule } from '@angular/cdk/dialog';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, combineLatest } from 'rxjs';
@@ -8,14 +9,16 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FileSystemItem } from '../../core/models/file-system.model';
 import { User } from '../../core/models/user.model';
-import { LucideAngularModule, ChevronRight, Home, Folder, FolderOpen, Grid, List, Share2, File, FileText, FileSpreadsheet, Image, X, Check, Cloud, Plus, Trash2, Clock, Star, HardDrive, MoreVertical, ChevronDown, Edit3, Download, ExternalLink, FolderUp, Lock, RotateCcw, Users } from 'lucide-angular';
+import { LucideAngularModule, ChevronRight, Home, Folder, FolderOpen, Grid, List, Share2, File, FileText, FileSpreadsheet, Image, X, Check, Cloud, Plus, Trash2, Clock, Star, HardDrive, MoreVertical, ChevronDown, Edit3, Download, ExternalLink, FolderUp, Lock, RotateCcw, Users, History } from 'lucide-angular';
 // rotate-ccw for restore
 import { ModalComponent } from '../../components/modal/modal.component';
+import { VersionHistoryDialogComponent } from '../../components/version-history-dialog/version-history-dialog';
 import Swal from 'sweetalert2';
 
 import { FileUploaderService } from '../../core/services/file-uploader.service';
 import { IconsModule } from '../../core/modules/icons.module';
 import { FilePreviewModalComponent } from '../../components/modal/file-preview-modal.component';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-file-manager',
@@ -25,7 +28,8 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
     IconsModule,
     FormsModule,
     ModalComponent,
-    FilePreviewModalComponent
+    FilePreviewModalComponent,
+    DialogModule
   ],
   template: `
     <div class="h-full flex flex-col relative" (click)="closeContextMenu()">
@@ -41,7 +45,7 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
       <!-- Toolbar with Breadcrumbs -->
       <div class="flex items-center justify-between mb-2 px-1 gap-4">
          <!-- Breadcrumbs -->
-         <div class="flex items-center gap-2 text-sm text-gray-600 bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+         <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
             <div (click)="navigateRoot()" class="flex items-center gap-1 cursor-pointer hover:text-blue-600 transition font-medium flex-shrink-0">
                <lucide-icon [name]="breadcrumbRootLabel() === 'Shared with me' ? 'users' : 'home'" class="h-4 w-4"></lucide-icon>
                <span>{{ breadcrumbRootLabel() }}</span>
@@ -60,19 +64,19 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
          </div>
 
         <div class="flex items-center gap-4 flex-shrink-0">
-             <div class="flex items-center bg-gray-100 rounded-lg p-1">
-              <button class="p-1.5 rounded-md transition" [class.bg-white]="viewMode() === 'grid'" [class.shadow-sm]="viewMode() === 'grid'" (click)="viewMode.set('grid')">
-                <lucide-icon name="grid" class="h-5 w-5 text-gray-600"></lucide-icon>
+             <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+              <button class="p-1.5 rounded-md transition" [class.bg-white]="viewMode() === 'grid'" [class.dark:bg-gray-700]="viewMode() === 'grid'" [class.shadow-sm]="viewMode() === 'grid'" (click)="viewMode.set('grid')">
+                <lucide-icon name="grid" class="h-5 w-5 text-gray-600 dark:text-gray-400"></lucide-icon>
               </button>
-              <button class="p-1.5 rounded-md transition" [class.bg-white]="viewMode() === 'list'" [class.shadow-sm]="viewMode() === 'list'" (click)="viewMode.set('list')">
-                <lucide-icon name="list" class="h-5 w-5 text-gray-600"></lucide-icon>
+              <button class="p-1.5 rounded-md transition" [class.bg-white]="viewMode() === 'list'" [class.dark:bg-gray-700]="viewMode() === 'list'" [class.shadow-sm]="viewMode() === 'list'" (click)="viewMode.set('list')">
+                <lucide-icon name="list" class="h-5 w-5 text-gray-600 dark:text-gray-400"></lucide-icon>
               </button>
             </div>
         </div>
       </div>
 
       <!-- Content -->
-      <div class="flex-1 overflow-auto pb-10">
+      <div class="flex-1 overflow-auto pb-10" (scroll)="onScroll($event)">
         <!-- Grid View -->
         <div *ngIf="viewMode() === 'grid'" class="space-y-8">
           
@@ -84,12 +88,12 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
              
              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               @for (item of folders(); track item.id) {
-                <div class="group bg-white rounded-xl border border-gray-200 hover:bg-gray-50 hover:shadow-sm transition cursor-pointer flex items-center justify-between p-3 relative"
+                <div class="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-sm transition cursor-pointer flex items-center justify-between p-3 relative"
                      (contextmenu)="$event.preventDefault(); openContextMenu($event, item)">
                     
                     <div class="flex items-center gap-3 flex-1 min-w-0" (dblclick)="onItemClick(item)">
                         <div class="text-gray-500 relative">
-                           <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 fill-gray-500 text-gray-500"></lucide-icon>
+                           <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 fill-gray-500 text-gray-500 dark:text-gray-400 dark:fill-gray-400/20"></lucide-icon>
                            <div *ngIf="item.isLocked" class="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 border border-white" [title]="'Locked by ' + item.lockedByUserName">
                               <lucide-icon name="lock" class="h-2 w-2 text-white"></lucide-icon>
                            </div>
@@ -97,7 +101,7 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
                               <lucide-icon name="users" class="h-2 w-2 text-blue-600"></lucide-icon>
                            </div>
                         </div>
-                        <span class="font-medium text-sm text-gray-700 truncate">{{ item.name }}</span>
+                        <span class="font-medium text-sm text-gray-700 dark:text-gray-200 truncate">{{ item.name }}</span>
                     </div>
 
                     <button class="p-1.5 hover:bg-gray-200 rounded-full text-gray-500 opacity-0 group-hover:opacity-100 transition focus:opacity-100"
@@ -117,9 +121,9 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
                  <h3 class="text-gray-500 font-medium text-sm">Files</h3>
              </div>
 
-             <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+             <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <table class="w-full text-left border-collapse">
-                   <thead class="text-xs font-medium text-gray-500 border-b border-gray-200 bg-gray-50">
+                   <thead class="text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                      <tr>
                        <th class="px-4 py-3 font-medium w-1/2">Name</th>
                        <th class="px-4 py-3 font-medium w-24">Size</th>
@@ -128,14 +132,14 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
                        <th class="px-4 py-3 font-medium w-10"></th>
                      </tr>
                    </thead>
-                   <tbody class="divide-y divide-gray-100 text-sm">
+                   <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
                      @for (item of filesList(); track item.id) {
-                       <tr (dblclick)="onItemClick(item)" class="group hover:bg-gray-50 cursor-pointer transition select-none"
+                       <tr (dblclick)="onItemClick(item)" class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition select-none"
                            (contextmenu)="$event.preventDefault(); openContextMenu($event, item)">
                          <td class="px-4 py-3">
                            <div class="flex items-center gap-3">
                               <lucide-icon [name]="getIcon(item.type)" [class]="'h-5 w-5 ' + getIconColor(item.type)"></lucide-icon>
-                             <span class="font-medium text-gray-700 truncate max-w-[300px]">{{ item.name }}</span>
+                             <span class="font-medium text-gray-700 dark:text-gray-200 truncate max-w-[300px]">{{ item.name }}</span>
                              <lucide-icon *ngIf="item.accessType === 'Shared' || item.isShared" name="users" class="h-4 w-4 text-blue-500 ml-2" title="Shared"></lucide-icon>
                            </div>
                          </td>
@@ -177,45 +181,45 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
 
         <!-- List View -->
         <div *ngIf="viewMode() === 'list'" class="space-y-4">
-           <div class="bg-white rounded-lg overflow-x-auto">
+           <div class="bg-white dark:bg-gray-800 rounded-lg overflow-x-auto border border-gray-200 dark:border-gray-700">
              <table class="w-full text-left border-collapse min-w-[600px] md:min-w-0">
-               <thead class="text-xs font-medium text-gray-500 border-b border-gray-200">
+               <thead class="text-xs font-medium text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
                  <tr>
                    <th class="px-4 py-3 font-medium w-full md:w-1/2">Name</th>
-                   <th class="py-3 px-4 text-left font-medium text-gray-500 hidden md:table-cell">Size</th>
-              <th class="py-3 px-4 text-left font-medium text-gray-500 hidden md:table-cell">
+                   <th class="py-3 px-4 text-left font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">Size</th>
+              <th class="py-3 px-4 text-left font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">
                   {{ isTrashView() ? 'Deleted Date' : 'Date Modified' }}
               </th>
-              <th class="py-3 px-4 text-left font-medium text-gray-500 hidden md:table-cell">
+              <th class="py-3 px-4 text-left font-medium text-gray-500 dark:text-gray-400 hidden md:table-cell">
                   {{ isTrashView() ? 'Deleted By' : 'Owner' }}
               </th>
-              <th class="py-3 px-4 text-right font-medium text-gray-500 rounded-tr-xl"></th>
+              <th class="py-3 px-4 text-right font-medium text-gray-500 dark:text-gray-400 rounded-tr-xl"></th>
                  </tr>
                </thead>
-               <tbody class="divide-y divide-gray-100 text-sm">
+               <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
                  <!-- Folders -->
                  @for (item of folders(); track item.id) {
-                   <tr (dblclick)="onItemClick(item)" class="group hover:bg-gray-100/50 cursor-pointer transition select-none"
+                   <tr (dblclick)="onItemClick(item)" class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition select-none"
                        (contextmenu)="$event.preventDefault(); openContextMenu($event, item)">
                      <td class="px-4 py-2">
                        <div class="flex items-center gap-3">
-                         <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 text-gray-500 fill-gray-500/20 flex-shrink-0"></lucide-icon>
-                         <span class="font-medium text-gray-700 truncate max-w-[200px] md:max-w-[300px]">{{ item.name }}</span>
+                         <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 text-gray-500 dark:text-gray-400 fill-gray-500/20 dark:fill-gray-400/10 flex-shrink-0"></lucide-icon>
+                         <span class="font-medium text-gray-700 dark:text-gray-200 truncate max-w-[200px] md:max-w-[300px]">{{ item.name }}</span>
                          <lucide-icon *ngIf="item.accessType === 'Shared' || item.isShared" name="users" class="h-4 w-4 text-blue-500 ml-2" title="Shared"></lucide-icon>
                        </div>
                      </td>
-                     <td class="py-3 px-4 text-gray-500 hidden md:table-cell">{{ formatSize(item.size, item.type === 'folder') }}</td>
-              <td class="py-3 px-4 text-gray-500 hidden md:table-cell">
+                     <td class="py-3 px-4 text-gray-500 dark:text-gray-400 hidden md:table-cell">{{ formatSize(item.size, item.type === 'folder') }}</td>
+              <td class="py-3 px-4 text-gray-500 dark:text-gray-400 hidden md:table-cell">
                   {{ (isTrashView() ? item.deletedAt : (item.lastModified || item.lockedOn)) | date:'mediumDate' }}
               </td>
               <td class="py-3 px-4 hidden md:table-cell">
                   <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                        [ngClass]="{'bg-blue-50 text-blue-700': isOwner(item), 'bg-purple-50 text-purple-700': !isOwner(item)}">
+                        [ngClass]="{'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300': isOwner(item), 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300': !isOwner(item)}">
                       {{ isTrashView() ? (item.deletedByName || 'Unknown') : item.ownerName }}
                   </span>
               </td>
                    <td class="px-4 py-2 text-right">
-                      <button class="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+                      <button class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
                               (click)="$event.stopPropagation(); openContextMenu($event, item)">
                          <lucide-icon name="more-vertical" class="h-4 w-4"></lucide-icon>
                       </button>
@@ -225,7 +229,7 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
                  
                  <!-- Files -->
                  @for (item of filesList(); track item.id) {
-                   <tr (dblclick)="onItemClick(item)" class="group hover:bg-gray-100/50 cursor-pointer transition select-none"
+                   <tr (dblclick)="onItemClick(item)" class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition select-none"
                        (contextmenu)="$event.preventDefault(); openContextMenu($event, item)">
                      <td class="px-4 py-2">
                        <div class="flex items-center gap-3">
@@ -233,29 +237,33 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
                           <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 text-blue-500 flex-shrink-0" *ngIf="item.type === 'doc'"></lucide-icon>
                           <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 text-green-500 flex-shrink-0" *ngIf="item.type === 'sheet'"></lucide-icon>
                           <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 text-purple-500 flex-shrink-0" *ngIf="item.type === 'image'"></lucide-icon>
-                          <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 text-gray-500 flex-shrink-0" *ngIf="!['pdf','doc','sheet','image'].includes(item.type)"></lucide-icon>
-                         <span class="font-medium text-gray-700 truncate max-w-[200px] md:max-w-[300px]">{{ item.name }}</span>
+                          <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 text-gray-500 dark:text-gray-400 flex-shrink-0" *ngIf="!['pdf','doc','sheet','image'].includes(item.type)"></lucide-icon>
+                         <span class="font-medium text-gray-700 dark:text-gray-200 truncate max-w-[200px] md:max-w-[300px]">{{ item.name }}</span>
                        </div>
                      </td>
-                     <td class="px-4 py-2 text-gray-500 text-sm hidden md:table-cell">{{ formatSize(item.size) }}</td>
-                     <td class="px-4 py-2 text-gray-500 hidden md:table-cell">
+                     <td class="px-4 py-2 text-gray-500 dark:text-gray-400 text-sm hidden md:table-cell">{{ formatSize(item.size) }}</td>
+                     <td class="px-4 py-2 text-gray-500 dark:text-gray-400 hidden md:table-cell">
                        {{ item.lastModified | date:'medium' }}
                      </td>
                      <td class="px-4 py-2 hidden md:table-cell">
                         <div class="flex items-center gap-2">
-                           <div class="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border border-gray-100"
+                           <div class="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold border border-gray-100 dark:border-gray-700"
                                 [class.bg-blue-100]="item.ownerId === authService.currentUser()?.id"
                                 [class.text-blue-700]="item.ownerId === authService.currentUser()?.id"
                                 [class.bg-orange-100]="item.ownerId !== authService.currentUser()?.id"
-                                [class.text-orange-700]="item.ownerId !== authService.currentUser()?.id">
+                                [class.text-orange-700]="item.ownerId !== authService.currentUser()?.id"
+                                [class.dark:bg-blue-900_30]="item.ownerId === authService.currentUser()?.id"
+                                [class.dark:text-blue-300]="item.ownerId === authService.currentUser()?.id"
+                                [class.dark:bg-orange-900_30]="item.ownerId !== authService.currentUser()?.id"
+                                [class.dark:text-orange-300]="item.ownerId !== authService.currentUser()?.id">
                              {{ (item.ownerId === authService.currentUser()?.id ? 'Me' : (item.ownerName ? item.ownerName.substring(0, 1) : 'O')) | uppercase }}
                            </div>
-                           <span class="text-gray-500 text-xs">{{ item.ownerId === authService.currentUser()?.id ? 'me' : item.ownerName }}</span>
+                           <span class="text-gray-500 dark:text-gray-400 text-xs">{{ item.ownerId === authService.currentUser()?.id ? 'me' : item.ownerName }}</span>
                         </div>
                          </td>
                          <td class="px-4 py-2">
                              <div class="flex items-center justify-end gap-1">
-                                <button class="p-1.5 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+                                <button class="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition opacity-100 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
                                         (click)="$event.stopPropagation(); openContextMenu($event, item)">
                                    <lucide-icon name="more-vertical" class="h-4 w-4"></lucide-icon>
                                 </button>
@@ -274,94 +282,99 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
 
       <!-- Context Menu -->
       <div *ngIf="contextMenuVisible()" 
-           class="fixed bg-white rounded-lg shadow-xl border border-gray-100 py-1 z-50 min-w-[200px] animate-in fade-in zoom-in-95 duration-100"
+           class="fixed bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 py-1 z-50 min-w-[200px] animate-in fade-in zoom-in-95 duration-100"
            [style.left.px]="contextMenuPosition().x"
            [style.top.px]="contextMenuPosition().y">
          
-          <div class="px-4 py-3 border-b border-gray-100">
-              <h3 class="font-medium text-gray-900 truncate">{{ selectedItem()?.name }}</h3>
+          <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+              <h3 class="font-medium text-gray-900 dark:text-gray-100 truncate">{{ selectedItem()?.name }}</h3>
           </div>
 
-          <button *ngIf="selectedItem()?.type !== 'folder'" (click)="openPreview(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700">
+          <button *ngIf="selectedItem()?.type !== 'folder'" (click)="openPreview(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <lucide-icon name="eye" class="h-4 w-4 text-gray-500"></lucide-icon>
               Preview
           </button>
 
-          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="openShareModal(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700 first:rounded-t-lg">
+          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="openShareModal(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 first:rounded-t-lg">
               <lucide-icon name="share-2" class="h-4 w-4 text-blue-500"></lucide-icon>
               Share
           </button>
 
-          <button *ngIf="!isTrashView()" (click)="downloadSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700">
-              <lucide-icon name="download" class="h-4 w-4 text-gray-500"></lucide-icon>
+          <button *ngIf="!isTrashView()" (click)="downloadSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <lucide-icon name="download" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
               Download
           </button>
           
-          <button *ngIf="!isTrashView()" (click)="toggleStar(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700">
-             <lucide-icon [name]="selectedItem()?.isStarred ? 'star' : 'star'" [class]="selectedItem()?.isStarred ? 'h-4 w-4 text-yellow-400 fill-current' : 'h-4 w-4 text-gray-500'"></lucide-icon>
+          <button *ngIf="!isTrashView()" (click)="toggleStar(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+             <lucide-icon [name]="selectedItem()?.isStarred ? 'star' : 'star'" [class]="selectedItem()?.isStarred ? 'h-4 w-4 text-yellow-400 fill-current' : 'h-4 w-4 text-gray-500 dark:text-gray-400'"></lucide-icon>
              {{ selectedItem()?.isStarred ? 'Remove from Starred' : 'Add to Starred' }}
           </button>
 
-          <div *ngIf="isTrashView()" class="my-1 border-t border-gray-100"></div>
+          <button *ngIf="!isTrashView() && selectedItem()?.type !== 'folder'" (click)="openVersionHistory()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+             <lucide-icon name="clock" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
+             Version History
+          </button>
 
-          <button *ngIf="isTrashView()" (click)="restoreSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700">
+          <div *ngIf="isTrashView()" class="my-1 border-t border-gray-100 dark:border-gray-700"></div>
+
+          <button *ngIf="isTrashView()" (click)="restoreSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
              <lucide-icon name="rotate-ccw" class="h-4 w-4 text-green-500"></lucide-icon>
              Restore
           </button>
 
-          <button *ngIf="isTrashView() && authService.isAdmin()" (click)="deletePermanentSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-red-600 hover:bg-red-50">
+          <button *ngIf="isTrashView() && authService.isAdmin()" (click)="deletePermanentSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30">
              <lucide-icon name="trash-2" class="h-4 w-4 text-red-500"></lucide-icon>
              Delete Permanently
           </button>
 
-         <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="renameSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center gap-2 text-sm text-gray-700">
-             <lucide-icon name="edit-3" class="h-4 w-4 text-gray-500"></lucide-icon>
-            Rename
-         </button>
+          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="renameSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <lucide-icon name="edit-3" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
+             Rename
+          </button>
 
-         <div *ngIf="!isTrashView()" class="my-1 border-t border-gray-100"></div>
+         <div *ngIf="!isTrashView()" class="my-1 border-t border-gray-100 dark:border-gray-700"></div>
 
-         <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="deleteSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-red-50 flex items-center gap-2 text-sm text-red-600">
-            <lucide-icon name="trash-2" class="h-4 w-4 text-red-500"></lucide-icon>
-            Delete
-         </button>
+          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="deleteSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+             <lucide-icon name="trash-2" class="h-4 w-4 text-red-500"></lucide-icon>
+             Delete
+          </button>
 
          <div class="my-1 border-t border-gray-100" *ngIf="selectedItem()?.isLocked && (authService.isAdmin() || selectedItem()?.lockedByUserId === authService.currentUser()?.id)"></div>
 
-         <button *ngIf="selectedItem()?.isLocked && (authService.isAdmin() || selectedItem()?.lockedByUserId == authService.currentUser()?.id)" 
-                 (click)="unlockSelectedItem()" 
-                 class="w-full text-left px-4 py-2 hover:bg-orange-50 flex items-center gap-2 text-sm text-orange-600">
-             <lucide-icon name="lock" class="h-4 w-4 text-orange-500"></lucide-icon>
-             Unlock File
-         </button>
+          <button *ngIf="selectedItem()?.isLocked && (authService.isAdmin() || selectedItem()?.lockedByUserId == authService.currentUser()?.id)" 
+                  (click)="unlockSelectedItem()" 
+                  class="w-full text-left px-4 py-2 hover:bg-orange-50 dark:hover:bg-orange-900/30 flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400">
+              <lucide-icon name="lock" class="h-4 w-4 text-orange-500"></lucide-icon>
+              Unlock File
+          </button>
       </div>
 
       <!-- Share Modal (Existing) -->
       <div *ngIf="showShareModal()" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <!-- ... existing share modal content ... -->
-          <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
-             <div class="p-6 border-b border-gray-100 flex justify-between items-center">
-                <h3 class="text-lg font-semibold text-gray-800">Share "{{ selectedItem()?.name }}"</h3>
-                <button (click)="closeShareModal()" class="text-gray-400 hover:text-gray-600">
+          <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
+              <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+                 <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Share "{{ selectedItem()?.name }}"</h3>
+                 <button (click)="closeShareModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                    <lucide-icon name="x" class="h-5 w-5"></lucide-icon>
                 </button>
              </div>
              
              <div class="p-6">
                 <div class="mb-4">
-                   <label class="block text-sm font-medium text-gray-700 mb-2">Select Users</label>
-                   <div class="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Users</label>
+                   <div class="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-100 dark:divide-gray-700">
                       @for (user of users(); track user.id) {
                          <div *ngIf="user.id !== authService.currentUser()?.id" 
-                              class="flex items-center justify-between p-3 hover:bg-gray-50 cursor-pointer"
+                              class="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
                               (click)="toggleUserSelection(user.id)">
                             <div class="flex items-center gap-3">
                                <div class="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
                                   {{ user.name.substring(0, 2).toUpperCase() }}
                                </div>
                                <div class="text-sm">
-                                  <p class="font-medium text-gray-800">{{ user.name }}</p>
-                                  <p class="text-gray-500 text-xs">{{ user.email }}</p>
+                                  <p class="font-medium text-gray-800 dark:text-gray-200">{{ user.name }}</p>
+                                  <p class="text-gray-500 dark:text-gray-400 text-xs">{{ user.email }}</p>
                                </div>
                             </div>
                             <div class="h-5 w-5 border-2 rounded-full flex items-center justify-center transition"
@@ -375,7 +388,7 @@ import { FilePreviewModalComponent } from '../../components/modal/file-preview-m
                 </div>
                 
                 <div class="flex justify-end gap-3">
-                   <button (click)="closeShareModal()" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium text-sm">Cancel</button>
+                   <button (click)="closeShareModal()" class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg font-medium text-sm">Cancel</button>
                    <button (click)="confirmShare()" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium text-sm hover:bg-blue-700 shadow-sm disabled:opacity-50">
                       Save
                    </button>
@@ -401,6 +414,7 @@ export class FileManagerComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private uploader = inject(FileUploaderService);
+  private dialog = inject(Dialog);
 
   isDragging = signal(false);
 
@@ -465,6 +479,12 @@ export class FileManagerComponent implements OnInit {
   });
 
   viewMode = signal<'grid' | 'list'>((localStorage.getItem('fileManagerViewMode') as 'grid' | 'list') || 'grid');
+
+  // Pagination State
+  currentPage = signal(1);
+  isLoading = signal(false);
+  hasMore = signal(true);
+  pageSize = 50;
 
   constructor() {
     effect(() => {
@@ -582,12 +602,7 @@ export class FileManagerComponent implements OnInit {
             }
           });
         } else {
-          Swal.fire({
-            title: 'Access Denied',
-            text: `This file is currently locked by ${item.lockedByUserName}. Only the locker or an Admin can download this file.`,
-            icon: 'error',
-            confirmButtonText: 'OK'
-          });
+          this.showLockedAlert(item);
         }
         return;
       }
@@ -630,6 +645,31 @@ export class FileManagerComponent implements OnInit {
       });
     }
     this.closeContextMenu();
+  }
+
+  // Inject Notification Service
+  private notificationService = inject(NotificationService);
+
+  private showLockedAlert(item: FileSystemItem) {
+    Swal.fire({
+      title: 'Access Denied',
+      text: `This file is currently locked by ${item.lockedByUserName}. Only the locker or an Admin can download this file.`,
+      icon: 'error',
+      showCancelButton: false,
+      showDenyButton: true,
+      confirmButtonText: 'OK',
+      denyButtonText: 'Notify me when unlocked',
+      confirmButtonColor: '#3085d6',
+      denyButtonColor: '#7066e0' // Purple for notify
+    }).then((result) => {
+      if (result.isDenied) {
+        // Request Notification
+        this.notificationService.requestUnlockNotification(item.id)?.subscribe({
+          next: () => Swal.fire('Request Sent', 'You will be notified when this file is unlocked.', 'success'),
+          error: (err) => Swal.fire('Error', err.error?.message || 'Failed to send request', 'error')
+        });
+      }
+    });
   }
 
   unlockSelectedItem() {
@@ -773,11 +813,59 @@ export class FileManagerComponent implements OnInit {
     this.authService.getUsers().subscribe(users => this.users.set(users));
   }
 
-  loadItems(folderId: string | null, filter?: string) {
-    this.fileService.getItems(folderId, filter).subscribe(() => {
-      this.fileService.currentFolderId.set(folderId);
-      this.loadBreadcrumbs(folderId);
+  loadItems(folderId: string | null, filter?: string, append: boolean = false) {
+    if (this.isLoading()) return;
+
+    this.isLoading.set(true);
+    // If not appending, reset page and clear files (or keep until load finishes to prevent flash, but clearing ensures no stale data)
+    if (!append) {
+      this.currentPage.set(1);
+      this.hasMore.set(true);
+      // Optional: clear current items to show skeleton? Or just update signal later.
+      // this.fileService.files.set([]); // Better to keep old while loading?
+    }
+
+    const page = this.currentPage();
+
+    this.fileService.getItems(folderId, filter, page, this.pageSize).subscribe({
+      next: (newItems) => {
+        if (newItems.length < this.pageSize) {
+          this.hasMore.set(false);
+        }
+
+        if (append) {
+          this.fileService.files.update(current => [...current, ...newItems]);
+        } else {
+          this.fileService.files.set(newItems);
+        }
+
+        this.fileService.currentFolderId.set(folderId);
+        if (!append) {
+          this.loadBreadcrumbs(folderId);
+        }
+        this.isLoading.set(false);
+      },
+      error: (err) => {
+        console.error('Failed to load items', err);
+        this.isLoading.set(false);
+      }
     });
+  }
+
+  onScroll(event: Event) {
+    const target = event.target as HTMLElement;
+    // Check if scrolled near bottom (e.g. within 100px)
+    if (target.scrollHeight - target.scrollTop - target.clientHeight < 100) {
+      if (this.hasMore() && !this.isLoading()) {
+        this.currentPage.update(p => p + 1);
+        // Determine current context to pass to loadItems
+        if (this.currentSection() === 'files') {
+          this.loadItems(this.fileService.currentFolderId(), undefined, true);
+        } else {
+          this.loadItems(null, this.currentSection(), true);
+        }
+      }
+    }
   }
 
   loadBreadcrumbs(folderId: string | null) {
@@ -817,6 +905,33 @@ export class FileManagerComponent implements OnInit {
   openPreview(item: FileSystemItem) {
     this.previewModal.open(item);
     this.closeContextMenu();
+  }
+
+  openVersionHistory() {
+    const item = this.selectedItem();
+    if (!item) return;
+    this.closeContextMenu();
+
+    const dialogRef = this.dialog.open(VersionHistoryDialogComponent, {
+      minWidth: '300px',
+      maxWidth: '600px',
+      data: {
+        fileId: item.id,
+        fileName: item.name
+      }
+    });
+
+    dialogRef.closed.subscribe(result => {
+      if (result === true) { // success from dialog
+        this.refreshCurrentFolder();
+      }
+    });
+  }
+
+  refreshCurrentFolder() {
+    // Logic to refresh currently viewed folder
+    const current = this.fileService.currentFolderId();
+    this.loadItems(current);
   }
 
   openShareModal(item: FileSystemItem) {

@@ -129,16 +129,9 @@ export class DashboardComponent implements OnInit {
     @ViewChild('previewModal') previewModal!: FilePreviewModalComponent;
 
     ngOnInit() {
-        // Fetch files and filter for recent (mock logic for now, just taking first 5)
-        // Ideally API should support ?sort=recent&limit=5
-        this.fileService.getItems(null).subscribe(files => {
-            // Sort by lastModified descending and take 5
-            const sorted = [...files].sort((a, b) => {
-                const dateA = new Date(a.lastModified).getTime();
-                const dateB = new Date(b.lastModified).getTime();
-                return dateB - dateA;
-            });
-            this.recentFiles.set(sorted.slice(0, 5));
+        // Efficiently fetch top 5 recent files using backend pagination
+        this.fileService.getItems(null, 'recent', 1, 5).subscribe(files => {
+            this.recentFiles.set(files);
         });
 
         this.fileService.getStorageUsage().subscribe(data => {

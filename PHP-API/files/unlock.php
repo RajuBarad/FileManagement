@@ -52,6 +52,36 @@ if(isset($data->fileId) && isset($data->userId)) {
     $unlockStmt = sqlsrv_query($conn, $unlockSql, array($fileId));
 
     if($unlockStmt) {
+        // --- NOTIFICATION LOGIC ---
+        // Find users who requested to be notified
+        $reqSql = "SELECT Id, RequesterUserId FROM UnlockRequests WHERE FileId = ? AND IsFulfilled = 0";
+        $reqStmt = sqlsrv_query($conn, $reqSql, array($fileId));
+        
+        if ($reqStmt) {
+            while ($reqRow = sqlsrv_fetch_array($reqStmt, SQLSRV_FETCH_ASSOC)) {
+                $reqId = $reqRow['Id'];
+                $requesterId = $reqRow['RequesterUserId'];
+
+                // Create Notification
+                // Get filename for nice message
+                $fnameSql = "SELECT FileName FROM Files WHERE Id = ?";
+                $fnameStmt = sqlsrv_query($conn, $fnameSql, array($fileId));
+                $fname = "Unknown File";
+                if ($fnRow = sqlsrv_fetch_array($fnameStmt)) {
+                    $fname = $fnRow['FileName'];
+                }
+
+                $msg = "File '$fname' is now unlocked and available for editing.";
+                $notifSql = "INSERT INTO Notifications (UserId, Message, Type, RelatedId) VALUES (?, ?, 'UnlockAlert', ?)";
+                sqlsrv_query($conn, $notifSql, array($requesterId, $msg, $fileId));
+
+                // Mark Request as Fulfilled
+                $updateReqSql = "UPDATE UnlockRequests SET IsFulfilled = 1 WHERE Id = ?";
+                sqlsrv_query($conn, $updateReqSql, array($reqId));
+            }
+        }
+        // --- END NOTIFICATION LOGIC ---
+
         http_response_code(200);
         echo json_encode(array("message" => "File unlocked successfully."));
     } else {

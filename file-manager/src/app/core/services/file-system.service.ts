@@ -24,11 +24,11 @@ export class FileSystemService {
         // Initial load could be triggered here or by components
     }
 
-    getItems(parentId: string | null, filter?: string): Observable<FileSystemItem[]> {
+    getItems(parentId: string | null, filter?: string, page: number = 1, limit: number = 50): Observable<FileSystemItem[]> {
         const currentUser = this.authService.currentUser();
         if (!currentUser) return of([]);
 
-        let url = `${this.API_BASE}/list.php?userId=${currentUser.id}`;
+        let url = `${this.API_BASE}/list.php?userId=${currentUser.id}&page=${page}&limit=${limit}`;
         if (filter) {
             url += `&filter=${filter}`;
         } else if (parentId) {
@@ -61,7 +61,7 @@ export class FileSystemService {
                     lockedOn: f.lockedOn ? new Date(f.lockedOn.date) : (f.lockedOn ? new Date(f.lockedOn) : undefined)
                 } as FileSystemItem));
             }),
-            tap(items => this.files.set(items)),
+            // Removed tap(items => this.files.set(items)) because the component should handle state aggregation for pagination
             catchError(err => {
                 console.error('Error fetching files', err);
                 return of([]);
@@ -456,5 +456,15 @@ export class FileSystemService {
 
     refreshCurrentFolder() {
         this.getItems(this.currentFolderId()).subscribe();
+    }
+
+    getVersions(fileId: string): Observable<any[]> {
+        return this.http.get<any[]>(`${this.API_BASE}/get_versions.php?fileId=${fileId}`);
+    }
+
+    restoreVersion(versionId: number): Observable<any> {
+        const currentUser = this.authService.currentUser();
+        if (!currentUser) return throwError(() => new Error('Not logged in'));
+        return this.http.post<any>(`${this.API_BASE}/restore_version.php`, { versionId, userId: currentUser.id });
     }
 }

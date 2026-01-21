@@ -21,28 +21,28 @@ import { LayoutService } from '../../core/services/layout.service';
       <div class="p-6">
         <div class="flex items-center gap-2 mb-8">
            <lucide-icon name="cloud" class="h-8 w-8 text-blue-600"></lucide-icon>
-          <span class="text-xl font-bold text-gray-800">BVA Drive</span>
+          <span class="text-xl font-bold text-gray-800 dark:text-white">BVA Drive</span>
         </div>
         
         <div class="relative">
-          <button (click)="toggleNewMenu()" class="w-full bg-white text-gray-700 border border-gray-200 rounded-full py-3 px-4 flex items-center gap-3 hover:bg-gray-50 hover:shadow-md transition shadow-sm mb-2">
+          <button (click)="toggleNewMenu()" class="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-full py-3 px-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md transition shadow-sm mb-2">
             <lucide-icon name="plus" class="h-6 w-6 text-blue-600"></lucide-icon>
             <span class="font-medium">New</span>
           </button>
 
           <!-- Dropdown -->
-          <div *ngIf="showNewMenu()" class="absolute left-0 top-full mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-left">
-            <button (click)="openNewFolderModal()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-3 text-gray-700">
-               <lucide-icon name="folder" class="h-4 w-4 text-gray-500"></lucide-icon>
+          <div *ngIf="showNewMenu()" class="absolute left-0 top-full mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-50 animate-in fade-in zoom-in-95 duration-100 origin-top-left">
+            <button (click)="openNewFolderModal()" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300">
+               <lucide-icon name="folder" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
                New Folder
             </button>
-            <hr class="my-2 border-gray-100">
-            <button (click)="fileInput.click()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-3 text-gray-700">
-               <lucide-icon name="upload" class="h-4 w-4 text-gray-500"></lucide-icon>
+            <hr class="my-2 border-gray-100 dark:border-gray-700">
+            <button (click)="fileInput.click()" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300">
+               <lucide-icon name="upload" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
                File Upload
             </button>
-            <button (click)="folderInput.click()" class="w-full text-left px-4 py-2 hover:bg-gray-100 flex items-center gap-3 text-gray-700">
-               <lucide-icon name="folder-up" class="h-4 w-4 text-gray-500"></lucide-icon>
+            <button (click)="folderInput.click()" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 text-gray-700 dark:text-gray-300">
+               <lucide-icon name="folder-up" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
                Folder Upload
             </button>
 
@@ -54,34 +54,34 @@ import { LayoutService } from '../../core/services/layout.service';
       </div>
       
       <nav class="flex-1 px-4 space-y-1">
-        <a routerLink="/files" routerLinkActive="bg-blue-50 text-blue-600" [routerLinkActiveOptions]="{exact: false}" 
+        <a routerLink="/files" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" [routerLinkActiveOptions]="{exact: false}" 
            (click)="layoutService.closeSidebar()"
-           class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+           class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
           <lucide-icon name="hard-drive" class="h-5 w-5"></lucide-icon>
           My Drive
         </a>
-        <a routerLink="/shared" (click)="layoutService.closeSidebar()"
-           class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+        <a routerLink="/shared" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
+           class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
           <lucide-icon name="users" class="h-5 w-5"></lucide-icon>
           Shared with me
         </a>
-        <a routerLink="/recent" (click)="layoutService.closeSidebar()"
-           class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+        <a routerLink="/recent" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
+           class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
           <lucide-icon name="clock" class="h-5 w-5"></lucide-icon>
           Recent
         </a>
-        <a routerLink="/starred" (click)="layoutService.closeSidebar()"
-           class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+        <a routerLink="/starred" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
+           class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
           <lucide-icon name="star" class="h-5 w-5"></lucide-icon>
           Starred
         </a>
-        <a routerLink="/trash" (click)="layoutService.closeSidebar()"
-           class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+        <a routerLink="/trash" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
+           class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
           <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
           Trash
         </a>
-        <a routerLink="/tasks" (click)="layoutService.closeSidebar()"
-           class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+        <a routerLink="/tasks" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
+           class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
           <lucide-icon name="check-square" class="h-5 w-5"></lucide-icon>
           Tasks
         </a>

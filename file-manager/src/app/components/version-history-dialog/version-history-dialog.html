@@ -1,0 +1,68 @@
+<div class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <!-- Header -->
+        <div class="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-xl font-bold dark:text-gray-100">Version History: {{data.fileName}}</h2>
+            <button (click)="close()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-6">
+            <ng-container *ngIf="versions$ | async as versions; else loadingTpl">
+                <div *ngIf="versions.length === 0" class="text-center text-gray-500 py-8">
+                    No previous versions found.
+                </div>
+
+                <div *ngIf="versions.length > 0" class="space-y-4">
+                    <div *ngFor="let ver of versions"
+                        class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg group hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <div>
+                            <div class="flex items-center gap-3">
+                                <span class="font-semibold text-gray-900 dark:text-gray-100">Version
+                                    {{ver.versionNumber}}</span>
+                                <span
+                                    class="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full dark:bg-blue-900/30 dark:text-blue-300">
+                                    {{ver.fileSize | formatSize}}
+                                </span>
+                            </div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                Modified {{ ver.uploadedAt?.date ? (ver.uploadedAt.date | date:'medium') : 'Unknown
+                                Date' }}
+                                by {{ver.uploadedByName || 'Unknown User'}}
+                            </div>
+                        </div>
+
+                        <button (click)="restore(ver)"
+                            class="opacity-0 group-hover:opacity-100 px-4 py-2 bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-500 transition-all shadow-sm">
+                            Restore
+                        </button>
+                    </div>
+                </div>
+            </ng-container>
+
+            <ng-template #loadingTpl>
+                <div class="flex justify-center p-8">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+                </div>
+            </ng-template>
+
+            <p class="text-xs text-gray-400 mt-6 text-center">
+                Restoring a version will create a backup of the current file as a new version.
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div
+            class="p-4 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 rounded-b-lg flex justify-end">
+            <button (click)="close()"
+                class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md font-medium transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>

@@ -88,12 +88,41 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                     }
                 }
 
-                // Fetch old file path to delete
-                $getOldSql = "SELECT FilePath FROM Files WHERE Id = ? AND OwnerId = ?";
+                // Fetch old file path to archive
+                $getOldSql = "SELECT FilePath, FileName, FileSize FROM Files WHERE Id = ? AND OwnerId = ?";
                 $getOldStmt = sqlsrv_query($conn, $getOldSql, array($existingFileId, $ownerId));
                 if($getOldStmt && $row = sqlsrv_fetch_array($getOldStmt, SQLSRV_FETCH_ASSOC)) {
                     if(file_exists($row['FilePath'])) {
-                        unlink($row['FilePath']); // Delete old physical file
+                        // Create versions directory if not exists
+                        $versionsDir = "../uploads/versions/";
+                        if(!is_dir($versionsDir)) {
+                            mkdir($versionsDir, 0777, true);
+                        }
+
+                        // Determine Version Number
+                        $verSql = "SELECT MAX(VersionNumber) as MaxVer FROM FileVersions WHERE FileId = ?";
+                        $verStmt = sqlsrv_query($conn, $verSql, array($existingFileId));
+                        $maxVer = 0;
+                        if($verStmt && $vRow = sqlsrv_fetch_array($verStmt, SQLSRV_FETCH_ASSOC)) {
+                            $maxVer = $vRow['MaxVer'] ? $vRow['MaxVer'] : 0;
+                        }
+                        $newVer = $maxVer + 1;
+
+                        // Archive Old File
+                        $archivedName = $existingFileId . "_v" . $newVer . "_" . $row['FileName']; // Unique name
+                        $archivedPath = $versionsDir . $archivedName;
+                        
+                        // Move or Copy? Copy is safer incase of failure, but Move saves space if we are overwriting anyway.
+                        // Since we are replacing the main file content, we should MOVE the old content to archive path.
+                        // ERROR: unique file names in uploads/. If we move, the main pointer is broken until we update.
+                        // Safe bet: Copy old to archive, then overwrite main.
+                        // Actually, rename() is fast.
+                        if (rename($row['FilePath'], $archivedPath)) {
+                            // Insert into FileVersions
+                            $insertVerSql = "INSERT INTO FileVersions (FileId, VersionNumber, FilePath, FileName, FileSize, UploadedByUserId) VALUES (?, ?, ?, ?, ?, ?)";
+                            $insertVerParams = array($existingFileId, $newVer, $archivedPath, $row['FileName'], $row['FileSize'], $ownerId);
+                            sqlsrv_query($conn, $insertVerSql, $insertVerParams);
+                        }
                     }
                 }
                 

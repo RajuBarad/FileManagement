@@ -50,7 +50,7 @@ import { LayoutService } from '../../core/services/layout.service';
                    } @else {
                        @for (n of notificationService.notifications(); track n.id) {
                            <div (click)="handleNotificationClick(n)" class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-50 dark:border-gray-700 last:border-0">
-                               <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ n.title }}</p>
+                               <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ getNotificationTitle(n) }}</p>
                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{{ n.message }}</p>
                                <p class="text-[10px] text-gray-400 mt-1">{{ n.createdAt | date:'short' }}</p>
                            </div>
@@ -122,17 +122,36 @@ export class HeaderComponent implements OnInit {
     });
   }
 
-  handleNotificationClick(n: any) {
-    this.notificationService.markAsRead([n.id]);
+  getNotificationTitle(n: any): string {
+    switch (n.type) {
+      case 'UnlockAlert': return 'File Unlocked';
+      case 'PendingUnlockRequest': return 'Pending Request';
+      case 'TaskAssignment': return 'New Task';
+      case 'FolderShare': return 'Folder Shared';
+      case 'FileShare': return 'File Shared';
+      default: return 'Notification';
+    }
+  }
 
-    if (n.type === 'TaskAssignment' && n.referenceId) {
-      // Navigate to tasks with query param to open modal
+  handleNotificationClick(n: any) {
+    this.notificationService.markAsRead(n.id);
+
+    if (n.type === 'UnlockAlert' && n.relatedId) {
+      // Logic to preview or go to folder?
+      // Currently generic, let's leave it or implement similarly if needed
+    } else if (n.type === 'PendingUnlockRequest') {
+      if (n.parentId === 'shared') {
+        this.router.navigate(['/shared']);
+      } else if (n.parentId) {
+        this.router.navigate(['/files', n.parentId]);
+      } else {
+        this.router.navigate(['/files']);
+      }
+    } else if (n.type === 'TaskAssignment' && n.referenceId) {
       this.router.navigate(['/tasks'], { queryParams: { openTaskId: n.referenceId, t: new Date().getTime() } });
     } else if (n.type === 'FolderShare' && n.referenceId) {
-      // Open the shared folder
       this.router.navigate(['/files', n.referenceId]);
     } else if (n.type === 'FileShare') {
-      // Navigate to Shared with me root
       this.router.navigate(['/files/shared']);
     }
   }

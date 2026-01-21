@@ -4,8 +4,11 @@ include_once '../config/db.php';
 if(isset($_GET['userId'])) {
     $userId = $_GET['userId'];
     $parentId = isset($_GET['parentId']) && $_GET['parentId'] !== 'null' ? $_GET['parentId'] : null;
+    $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 50;
+    $offset = ($page - 1) * $limit;
     
-    file_put_contents("../php_list_debug.log", date('Y-m-d H:i:s') . " - List Request. User: $userId, Parent: " . ($parentId ?? 'NULL') . "\n", FILE_APPEND);
+    file_put_contents("../php_list_debug.log", date('Y-m-d H:i:s') . " - List Request. User: $userId, Parent: " . ($parentId ?? 'NULL') . ", Page: $page\n", FILE_APPEND);
     
     // Get owned files AND shared files
     // Filter by ParentId
@@ -31,8 +34,10 @@ if(isset($_GET['userId'])) {
                     JOIN Users u ON f.OwnerId = u.Id
                     LEFT JOIN Users lu ON f.LockedByUserId = lu.Id
                     JOIN StarredFiles sf ON f.Id = sf.FileId
-                    WHERE sf.UserId = ? AND f.IsDeleted = 0";
-            $params = array($userId, $userId);
+                    WHERE sf.UserId = ? AND f.IsDeleted = 0
+                    ORDER BY f.IsFolder DESC, f.FileName ASC
+                    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            $params = array($userId, $userId, $offset, $limit);
         } else if ($filter === 'trash') {
             // 1. Cleanup old trash (older than 30 days)
             $cleanupSql = "DELETE FROM Files WHERE IsDeleted = 1 AND DeletedAt < DATEADD(day, -30, GETDATE())";
@@ -50,13 +55,16 @@ if(isset($_GET['userId'])) {
                     LEFT JOIN Users lu ON f.LockedByUserId = lu.Id
                     LEFT JOIN Users dbu ON f.DeletedByUserId = dbu.Id
                     LEFT JOIN StarredFiles sf ON f.Id = sf.FileId AND sf.UserId = ?
-                    WHERE f.OwnerId = ? AND f.IsDeleted = 1";
-            $params = array($userId, $userId, $userId);
+                    WHERE f.OwnerId = ? AND f.IsDeleted = 1
+                    ORDER BY f.DeletedAt DESC
+                    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            $params = array($userId, $userId, $userId, $offset, $limit);
 
         } else if ($filter === 'recent') {
             // Recent files (Owned or Shared, Not Deleted, Sort by LastModified)
-            // Limit 20
-            $sql = "SELECT TOP 20 CAST(f.Id AS NVARCHAR(36)) as Id, f.FileName, f.FilePath, f.FileSize, f.OwnerId, CAST(f.ParentId AS NVARCHAR(36)) as ParentId, f.IsFolder, u.Username as OwnerName, 
+            // Recent files (Owned or Shared, Not Deleted, Sort by LastModified)
+            // Pagination applied
+            $sql = "SELECT CAST(f.Id AS NVARCHAR(36)) as Id, f.FileName, f.FilePath, f.FileSize, f.OwnerId, CAST(f.ParentId AS NVARCHAR(36)) as ParentId, f.IsFolder, u.Username as OwnerName, 
                            CASE WHEN f.OwnerId = ? THEN 'Owned' ELSE 'Shared' END as AccessType,
                            f.IsShared,
                            f.IsLocked, f.LockedByUserId, f.LockedOn, lu.Username as LockedByUserName,
@@ -67,8 +75,9 @@ if(isset($_GET['userId'])) {
                     LEFT JOIN StarredFiles sf ON f.Id = sf.FileId AND sf.UserId = ?
                     WHERE (f.OwnerId = ? OR f.Id IN (SELECT FileId FROM GenericShares WHERE SharedWithUserId = ?)) 
                       AND f.IsDeleted = 0
-                    ORDER BY f.LastModified DESC";
-            $params = array($userId, $userId, $userId, $userId);
+                    ORDER BY f.LastModified DESC
+                    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            $params = array($userId, $userId, $userId, $userId, $offset, $limit);
 
         } else if ($filter === 'shared') {
             // Shared View (Incoming + Outgoing)
@@ -83,8 +92,10 @@ if(isset($_GET['userId'])) {
                     LEFT JOIN GenericShares gs ON f.Id = gs.FileId
                     LEFT JOIN StarredFiles sf ON f.Id = sf.FileId AND sf.UserId = ?
                     WHERE (gs.SharedWithUserId = ? OR (f.OwnerId = ? AND f.IsShared = 1)) 
-                      AND f.IsDeleted = 0";
-            $params = array($userId, $userId, $userId, $userId);
+                      AND f.IsDeleted = 0
+                    ORDER BY f.IsFolder DESC, f.FileName ASC
+                    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+            $params = array($userId, $userId, $userId, $userId, $offset, $limit);
         } else {
             // Normal Root View (Not Deleted)
             $sql = "SELECT CAST(f.Id AS NVARCHAR(36)) as Id, f.FileName, f.FilePath, f.FileSize, f.OwnerId, CAST(f.ParentId AS NVARCHAR(36)) as ParentId, f.IsFolder, u.Username as OwnerName, 'Owned' as AccessType,
@@ -95,9 +106,11 @@ if(isset($_GET['userId'])) {
                     JOIN Users u ON f.OwnerId = u.Id
                     LEFT JOIN Users lu ON f.LockedByUserId = lu.Id
                     LEFT JOIN StarredFiles sf ON f.Id = sf.FileId AND sf.UserId = ?
-                    WHERE f.OwnerId = ? AND f.ParentId IS NULL AND f.IsDeleted = 0";
+                    WHERE f.OwnerId = ? AND f.ParentId IS NULL AND f.IsDeleted = 0
+                    ORDER BY f.IsFolder DESC, f.FileName ASC
+                    OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
             
-            $params = array($userId, $userId);
+            $params = array($userId, $userId, $offset, $limit);
         }
     } else {
         // Checking Access to the Parent Folder
@@ -125,8 +138,10 @@ if(isset($_GET['userId'])) {
                 JOIN Users u ON f.OwnerId = u.Id
                 LEFT JOIN Users lu ON f.LockedByUserId = lu.Id
                 LEFT JOIN StarredFiles sf ON f.Id = sf.FileId AND sf.UserId = ?
-                WHERE f.ParentId = ? AND f.IsDeleted = 0";
-        $params = array($userId, $userId, $parentId);
+                WHERE f.ParentId = ? AND f.IsDeleted = 0
+                ORDER BY f.IsFolder DESC, f.FileName ASC
+                OFFSET ? ROWS FETCH NEXT ? ROWS ONLY";
+        $params = array($userId, $userId, $parentId, $offset, $limit);
     }
 
     $stmt = sqlsrv_query($conn, $sql, $params);
@@ -148,7 +163,7 @@ if(isset($_GET['userId'])) {
             'ownerName' => $row['OwnerName'],
             'parentId' => $row['ParentId'],
             'accessType' => $row['AccessType'],
-            'url' => (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]/files/download.php?id=" . $row['Id'], 
+            'url' => (isset($_SERVER['HTTPS']) ? "http" : "http") . "://$_SERVER[HTTP_HOST]/files/download.php?id=" . $row['Id'], 
             'isStarred' => isset($row['IsStarred']) ? (bool)$row['IsStarred'] : false,
             'isShared' => isset($row['IsShared']) ? (bool)$row['IsShared'] : false,
             'isLocked' => (bool)$row['IsLocked'],

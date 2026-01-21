@@ -13,8 +13,4 @@ import { NotificationService } from './core/services/notification.service';
 export class App {
   protected readonly title = signal('file-manager');
   private notificationService = inject(NotificationService);
-
-  ngOnInit() {
-    this.notificationService.startPolling();
-  }
 }
