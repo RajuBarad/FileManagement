@@ -9,7 +9,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { FileSystemItem } from '../../core/models/file-system.model';
 import { User } from '../../core/models/user.model';
-import { LucideAngularModule, ChevronRight, Home, Folder, FolderOpen, Grid, List, Share2, File, FileText, FileSpreadsheet, Image, X, Check, Cloud, Plus, Trash2, Clock, Star, HardDrive, MoreVertical, ChevronDown, Edit3, Download, ExternalLink, FolderUp, Lock, RotateCcw, Users, History } from 'lucide-angular';
+import { LucideAngularModule, ChevronRight, Home, Folder, FolderOpen, Grid, List, Share2, File, FileText, FileSpreadsheet, Image, X, Check, Cloud, Plus, Trash2, Clock, Star, HardDrive, MoreVertical, ChevronDown, Edit3, Download, ExternalLink, FolderUp, Lock, RotateCcw, Users, History, Ban, Eye, Loader2, Music, Video, FileQuestion, AlertTriangle } from 'lucide-angular';
 // rotate-ccw for restore
 import { ModalComponent } from '../../components/modal/modal.component';
 import { VersionHistoryDialogComponent } from '../../components/version-history-dialog/version-history-dialog';
@@ -17,7 +17,7 @@ import Swal from 'sweetalert2';
 
 import { FileUploaderService } from '../../core/services/file-uploader.service';
 import { IconsModule } from '../../core/modules/icons.module';
-import { FilePreviewModalComponent } from '../../components/modal/file-preview-modal.component';
+import { FilePreviewService } from '../../core/services/file-preview.service';
 import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
@@ -28,7 +28,6 @@ import { NotificationService } from '../../core/services/notification.service';
     IconsModule,
     FormsModule,
     ModalComponent,
-    FilePreviewModalComponent,
     DialogModule
   ],
   template: `
@@ -116,7 +115,7 @@ import { NotificationService } from '../../core/services/notification.service';
           </div>
 
           <!-- Files Section -->
-          <div *ngIf="filesList().length > 0">
+          <div *ngIf="filesList().length > 0 || fileService.isLoading()">
              <div class="flex items-center justify-between mb-4">
                  <h3 class="text-gray-500 font-medium text-sm">Files</h3>
              </div>
@@ -169,14 +168,35 @@ import { NotificationService } from '../../core/services/notification.service';
                          </td>
                        </tr>
                      }
-                   </tbody>
+                      
+                      <!-- Skeleton Rows for Grid View (List Style) -->
+                      <ng-container *ngIf="fileService.isLoading()">
+                        @for (i of [1,2,3,4,5]; track i) {
+                           <tr class="animate-pulse border-b border-gray-100 dark:border-gray-700">
+                             <td class="px-4 py-2">
+                               <div class="flex items-center gap-3">
+                                  <div class="h-5 w-5 rounded bg-gray-200 dark:bg-gray-700"></div>
+                                  <div class="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                               </div>
+                             </td>
+                             <td class="px-4 py-3 text-gray-500 text-sm"><div class="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                             <td class="px-4 py-3 text-gray-500"><div class="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                             <td class="px-4 py-3"><div class="h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700"></div></td>
+                             <td class="px-4 py-3"></td>
+                           </tr>
+                        }
+                      </ng-container>
+                    </tbody>
                 </table>
              </div>
           </div>
           
-          <div *ngIf="items().length === 0" class="text-center py-10 text-gray-400">
+          <div *ngIf="items().length === 0 && !fileService.isLoading()" class="text-center py-10 text-gray-400">
             Folder is empty
           </div>
+          <!-- Skeleton Loader (Grid) -->
+           <!-- Skeleton Loader (Unified List Style) -->
+           <!-- Skeleton Loader Removed (Moved inside table) -->
         </div>
 
         <!-- List View -->
@@ -270,10 +290,28 @@ import { NotificationService } from '../../core/services/notification.service';
                              </div>
                          </td>
                        </tr>
-                     }</tbody>
+                     }
+                      <ng-container *ngIf="fileService.isLoading()">
+                        @for (i of [1,2,3,4,5]; track i) {
+                           <tr class="animate-pulse border-b border-gray-100 dark:border-gray-700">
+                             <td class="px-4 py-2">
+                               <div class="flex items-center gap-3">
+                                  <div class="h-5 w-5 rounded bg-gray-200 dark:bg-gray-700"></div>
+                                  <div class="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                               </div>
+                             </td>
+                             <td class="px-4 py-2 hidden md:table-cell"><div class="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                             <td class="px-4 py-2 hidden md:table-cell"><div class="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded"></div></td>
+                             <td class="px-4 py-2 hidden md:table-cell"><div class="h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700"></div></td>
+                             <td class="px-4 py-2"></td>
+                           </tr>
+                        }
+                     </ng-container>
+
+                    </tbody>
              </table>
              
-             <div *ngIf="items().length === 0" class="text-center py-10 text-gray-400">
+             <div *ngIf="items().length === 0 && !fileService.isLoading()" class="text-center py-10 text-gray-400">
                  Folder is empty
              </div>
            </div>
@@ -402,8 +440,6 @@ import { NotificationService } from '../../core/services/notification.service';
           actionButtonText="Rename"
           (onConfirm)="onRenameConfirm($event)">
       </app-modal>
-
-      <app-file-preview-modal #previewModal></app-file-preview-modal>
     </div>
   `
 })
@@ -415,6 +451,9 @@ export class FileManagerComponent implements OnInit {
   private router = inject(Router);
   private uploader = inject(FileUploaderService);
   private dialog = inject(Dialog);
+  private previewService = inject(FilePreviewService);
+
+
 
   isDragging = signal(false);
 
@@ -448,7 +487,6 @@ export class FileManagerComponent implements OnInit {
   }
 
   @ViewChild('renameModal') renameModal!: ModalComponent;
-  @ViewChild('previewModal') previewModal!: FilePreviewModalComponent;
 
   // items = signal<FileSystemItem[]>([]); // Removed local signal
   items = this.fileService.files; // Use service signal directly
@@ -482,7 +520,7 @@ export class FileManagerComponent implements OnInit {
 
   // Pagination State
   currentPage = signal(1);
-  isLoading = signal(false);
+  // isLoading = signal(false); // Moved to Service
   hasMore = signal(true);
   pageSize = 50;
 
@@ -490,6 +528,27 @@ export class FileManagerComponent implements OnInit {
     effect(() => {
       localStorage.setItem('fileManagerViewMode', this.viewMode());
     });
+
+    // Reset pagination when search query changes
+    effect(() => {
+      const query = this.fileService.currentSearchQuery();
+      const isSearching = this.fileService.isSearching();
+      const files = this.fileService.files();
+      const isLoading = this.fileService.isLoading();
+
+      if (isSearching) {
+        // If a new search starts (query changes implicitly handled by isSearching toggle often, 
+        // but strictly we should watch query too. The previous code watched query but didn't use it.)
+        // We reset to page 1.
+        // Also, if we have results and it's less than limit, disable hasMore.
+        if (this.currentPage() === 1 && !isLoading && files.length < 15) {
+          this.hasMore.set(false);
+        } else if (this.currentPage() === 1 && isLoading) {
+          // Resetting for new search
+          this.hasMore.set(true);
+        }
+      }
+    }, { allowSignalWrites: true });
   }
 
   // Sharing Logic
@@ -814,15 +873,14 @@ export class FileManagerComponent implements OnInit {
   }
 
   loadItems(folderId: string | null, filter?: string, append: boolean = false) {
-    if (this.isLoading()) return;
+    if (this.fileService.isLoading()) return;
 
-    this.isLoading.set(true);
-    // If not appending, reset page and clear files (or keep until load finishes to prevent flash, but clearing ensures no stale data)
+    // this.isLoading.set(true); // Handled in Service
+    // If not appending, reset page and clear files
     if (!append) {
       this.currentPage.set(1);
       this.hasMore.set(true);
-      // Optional: clear current items to show skeleton? Or just update signal later.
-      // this.fileService.files.set([]); // Better to keep old while loading?
+      this.fileService.files.set([]); // Clear for skeleton
     }
 
     const page = this.currentPage();
@@ -843,11 +901,11 @@ export class FileManagerComponent implements OnInit {
         if (!append) {
           this.loadBreadcrumbs(folderId);
         }
-        this.isLoading.set(false);
+        // this.isLoading.set(false); // Handled in Service
       },
       error: (err) => {
         console.error('Failed to load items', err);
-        this.isLoading.set(false);
+        // this.isLoading.set(false); // Handled in Service
       }
     });
   }
@@ -856,10 +914,23 @@ export class FileManagerComponent implements OnInit {
     const target = event.target as HTMLElement;
     // Check if scrolled near bottom (e.g. within 100px)
     if (target.scrollHeight - target.scrollTop - target.clientHeight < 100) {
-      if (this.hasMore() && !this.isLoading()) {
+      if (this.hasMore() && !this.fileService.isLoading()) {
         this.currentPage.update(p => p + 1);
+
         // Determine current context to pass to loadItems
-        if (this.currentSection() === 'files') {
+        if (this.fileService.isSearching()) {
+          this.fileService.searchFiles(
+            this.fileService.currentSearchQuery(),
+            this.currentPage(),
+            15,
+            true
+          ).subscribe({
+            next: (items) => {
+              if (items.length < 15) this.hasMore.set(false);
+            },
+            error: () => { }
+          });
+        } else if (this.currentSection() === 'files') {
           this.loadItems(this.fileService.currentFolderId(), undefined, true);
         } else {
           this.loadItems(null, this.currentSection(), true);
@@ -897,13 +968,15 @@ export class FileManagerComponent implements OnInit {
     if (item.type === 'folder') {
       this.router.navigate(['/files', item.id]);
     } else {
+      console.log('FileManager: Double click on file', item.name);
       // Open preview instead of direct download
-      this.previewModal.open(item);
+      this.previewService.open(item);
     }
   }
 
   openPreview(item: FileSystemItem) {
-    this.previewModal.open(item);
+    console.log('FileManager: Context menu preview for', item.name);
+    this.previewService.open(item);
     this.closeContextMenu();
   }
 

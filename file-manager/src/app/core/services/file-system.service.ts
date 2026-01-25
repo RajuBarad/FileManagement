@@ -1,7 +1,7 @@
-import { Injectable, signal, inject, computed } from '@angular/core';
+import { Injectable, signal, inject, computed, NgZone } from '@angular/core';
 import { FileSystemItem } from '../models/file-system.model';
 import { Observable, of, throwError } from 'rxjs';
-import { map, tap, catchError } from 'rxjs/operators';
+import { map, tap, catchError, finalize } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { ToastService } from './toast.service';
 import { HttpClient, HttpErrorResponse, HttpEvent, HttpEventType } from '@angular/common/http';
@@ -15,18 +15,32 @@ export class FileSystemService {
     private authService = inject(AuthService);
     private toast = inject(ToastService);
     private http = inject(HttpClient);
+    private zone = inject(NgZone);
+
+    // Expose as readonly or direct signal
 
     // Expose as readonly or direct signal
     public files = signal<FileSystemItem[]>([]);
+    public isLoading = signal(false);
     currentFolderId = signal<string | null>(null);
+
+    // Search State
+    isSearching = signal(false);
+    currentSearchQuery = signal('');
 
     constructor() {
         // Initial load could be triggered here or by components
     }
 
     getItems(parentId: string | null, filter?: string, page: number = 1, limit: number = 50): Observable<FileSystemItem[]> {
+        this.isSearching.set(false); // Reset search state
+        this.isLoading.set(true);
+
         const currentUser = this.authService.currentUser();
-        if (!currentUser) return of([]);
+        if (!currentUser) {
+            this.isLoading.set(false);
+            return of([]);
+        }
 
         let url = `${this.API_BASE}/list.php?userId=${currentUser.id}&page=${page}&limit=${limit}`;
         if (filter) {
@@ -65,7 +79,8 @@ export class FileSystemService {
             catchError(err => {
                 console.error('Error fetching files', err);
                 return of([]);
-            })
+            }),
+            finalize(() => this.isLoading.set(false))
         );
     }
 
@@ -152,44 +167,88 @@ export class FileSystemService {
         );
     }
 
-    searchFiles(query: string): Observable<FileSystemItem[]> {
+    searchFiles(query: string, page: number = 1, limit: number = 15, append: boolean = false): Observable<FileSystemItem[]> {
         const currentUser = this.authService.currentUser();
         if (!currentUser) return of([]);
 
-        return this.http.get<any[]>(`${this.API_BASE}/search.php?userId=${currentUser.id}&query=${encodeURIComponent(query)}`).pipe(
+        // Update state
+        this.isSearching.set(true);
+        this.isLoading.set(true);
+        this.currentSearchQuery.set(query);
+        this.currentFolderId.set(null); // Clear folder context during search
+
+        if (!append) {
+            this.files.set([]);
+        }
+
+        return this.http.get<any[]>(`${this.API_BASE}/search.php?userId=${currentUser.id}&query=${encodeURIComponent(query)}&page=${page}&limit=${limit}`).pipe(
             map(apiFiles => {
                 if (!Array.isArray(apiFiles)) {
                     console.error('Search response is not an array:', apiFiles);
                     return [];
                 }
-                return apiFiles.map(f => ({
-                    id: f.id.toString(),
-                    parentId: f.parentId ? f.parentId.toString() : null,
-                    name: f.name,
-                    type: f.type === 'folder' ? 'folder' : this.determineType(f.name),
-                    size: f.size ? Number(f.size) : 0,
-                    ownerId: f.ownerId.toString(),
-                    ownerName: f.ownerName,
-                    sharedWith: [],
-                    accessType: f.accessType,
-                    url: f.url,
-                    isLocked: f.isLocked,
-                    lockedByUserId: f.lockedByUserId,
-                    lockedByUserName: f.lockedByUserName, // API might need to return this too if needed, but not critical for simple search list
-                    lockedOn: f.lockedOn,
-                    isStarred: f.isStarred,
-                    isDeleted: f.isDeleted,
-                    deletedAt: f.deletedAt ? new Date(f.deletedAt) : undefined,
-                    lastModified: f.lastModified ? new Date(f.lastModified.date) : f.lastModified,
-                    path: f.path
-                } as FileSystemItem));
+                return this.mapApiFiles(apiFiles);
             }),
-            tap(items => this.files.set(items)), // Update the main signal to show results
+            tap(items => {
+                this.zone.run(() => {
+                    if (append) {
+                        this.files.update(current => [...current, ...items]);
+                    } else {
+                        this.files.set(items);
+                    }
+                });
+            }),
             catchError(err => {
                 console.error('Search error', err);
                 return of([]);
+            }),
+            finalize(() => {
+                this.zone.run(() => {
+                    this.isLoading.set(false);
+                });
             })
         );
+    }
+
+    quickSearch(query: string, limit: number = 5): Observable<FileSystemItem[]> {
+        const userId = this.authService.currentUser()?.id;
+        return this.http.get<any[]>(`${this.API_BASE}/search.php?query=${query}&userId=${userId}&page=1&limit=${limit}`)
+            .pipe(
+                map(apiFiles => this.mapApiFiles(apiFiles)),
+                catchError(err => {
+                    console.error('Quick search error', err);
+                    return of([]);
+                })
+            );
+    }
+
+    private mapApiFiles(apiFiles: any[]): FileSystemItem[] {
+        return apiFiles.map(f => ({
+            id: f.id.toString(),
+            parentId: f.parentId ? f.parentId.toString() : null,
+            name: f.name,
+            type: f.type === 'folder' ? 'folder' : this.determineType(f.name),
+            size: f.size ? Number(f.size) : 0,
+            ownerId: f.ownerId.toString(),
+            ownerName: f.ownerName,
+            sharedWith: [],
+            accessType: f.accessType,
+            url: f.url,
+            isLocked: f.isLocked,
+            lockedByUserId: f.lockedByUserId,
+            lockedByUserName: f.lockedByUserName,
+            lockedOn: f.lockedOn,
+            isStarred: f.isStarred,
+            isDeleted: f.isDeleted,
+            deletedAt: f.deletedAt ? new Date(f.deletedAt) : undefined,
+            lastModified: f.lastModified ? new Date(f.lastModified.date) : f.lastModified,
+            path: f.path
+        } as FileSystemItem));
+    }
+
+    resetSearch() {
+        this.isSearching.set(false);
+        this.currentSearchQuery.set('');
     }
 
     restoreFile(fileId: string): Observable<any> {

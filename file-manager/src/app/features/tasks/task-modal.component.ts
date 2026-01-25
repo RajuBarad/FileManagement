@@ -9,7 +9,7 @@ import { IconsModule } from '../../core/modules/icons.module';
 import { FileSystemService } from '../../core/services/file-system.service';
 import { FileSystemItem } from '../../core/models/file-system.model';
 import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 
 @Component({
   selector: 'app-task-modal',
@@ -167,16 +167,36 @@ import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
                           </div>
                           
                           <!-- Search Results Dropdown -->
-                          <div *ngIf="searchResults().length > 0" class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                          <div *ngIf="searchResults().length > 0 || isSearchingAttachments()" class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                              
+                              <div *ngIf="isSearchingAttachments()" class="p-4 flex justify-center items-center text-gray-500 dark:text-gray-400 gap-2">
+                                  <lucide-icon name="loader-2" class="h-4 w-4 animate-spin"></lucide-icon>
+                                  <span class="text-xs">Searching files...</span>
+                              </div>
+
                               @for (result of searchResults(); track result.id) {
-                                  <button (click)="attachFile(result)" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-3 transition border-b border-gray-50 dark:border-gray-700 last:border-0 border-gray-100">
-                                      <lucide-icon [name]="result.type === 'folder' ? 'folder' : 'file'" class="h-4 w-4 text-gray-400 flex-shrink-0"></lucide-icon>
-                                      <div class="flex flex-col flex-1 overflow-hidden">
-                                          <span class="text-sm text-gray-700 dark:text-gray-200 truncate">{{ result.name }}</span>
-                                          <span class="text-[10px] text-gray-400 truncate">{{ result.path }}</span>
+                                  <div (mousedown)="attachFile(result)" class="flex items-center px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer group border-b border-gray-50 dark:border-gray-700 last:border-0">
+                                      <!-- Icon -->
+                                      <div class="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0 mr-3">
+                                          <lucide-icon [name]="result.type === 'folder' ? 'folder' : 'file'" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
                                       </div>
-                                      <lucide-icon name="plus" class="h-3 w-3 text-blue-500 opacity-0 group-hover:opacity-100 flex-shrink-0"></lucide-icon>
-                                  </button>
+                                      
+                                      <!-- Text -->
+                                      <div class="flex-1 min-w-0">
+                                          <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" [title]="result.name">{{ result.name }}</p>
+                                          <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ result.ownerName || 'Me' }}</p>
+                                      </div>
+
+                                      <!-- Metadata (Date) -->
+                                      <div class="ml-4 text-xs text-gray-400 shrink-0 hidden sm:block">
+                                          {{ result.lastModified | date:'shortDate' }}
+                                      </div>
+
+                                        <!-- Action -->
+                                      <div class="ml-2 opacity-0 group-hover:opacity-100 transition">
+                                           <lucide-icon name="plus" class="h-4 w-4 text-blue-500"></lucide-icon>
+                                      </div>
+                                  </div>
                               }
                           </div>
                        </div>
@@ -213,6 +233,7 @@ export class TaskModalComponent {
   comments = signal<any[]>([]);
   attachments = signal<any[]>([]);
   searchResults = signal<FileSystemItem[]>([]);
+  isSearchingAttachments = signal(false);
 
   isSaving = signal(false);
   viewMode: 'create' | 'edit' | 'comments' = 'create';
@@ -239,9 +260,12 @@ export class TaskModalComponent {
         this.searchResults.set([]);
         return;
       }
-      this.fileService.searchFiles(query).subscribe((results: FileSystemItem[]) => {
-        this.searchResults.set(results.filter((f: FileSystemItem) => f.type !== 'folder')); // Only allow attaching files
-      });
+      this.isSearchingAttachments.set(true);
+      this.fileService.searchFiles(query)
+        .pipe(finalize(() => this.isSearchingAttachments.set(false)))
+        .subscribe((results: FileSystemItem[]) => {
+          this.searchResults.set(results.filter((f: FileSystemItem) => f.type !== 'folder')); // Only allow attaching files
+        });
     });
   }
 

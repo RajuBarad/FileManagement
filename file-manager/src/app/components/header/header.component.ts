@@ -1,12 +1,14 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IconsModule } from '../../core/modules/icons.module';
 import { AuthService } from '../../core/services/auth.service';
 import { FileSystemService } from '../../core/services/file-system.service';
+import { FileSystemItem } from '../../core/models/file-system.model';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { RouterModule, Router } from '@angular/router';
 import { NotificationService } from '../../core/services/notification.service';
+import { FilePreviewService } from '../../core/services/file-preview.service';
 
 import { LayoutService } from '../../core/services/layout.service';
 
@@ -22,13 +24,65 @@ import { LayoutService } from '../../core/services/layout.service';
         </button>
 
       <div class="flex-1 max-w-2xl">
-        <div class="relative">
+        <div class="relative z-50">
           <lucide-icon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none"></lucide-icon>
           <input type="text" placeholder="Search in Drive" 
                  [formControl]="searchControl"
-                 class="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-lg pl-12 pr-4 py-2.5 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:bg-white dark:focus:bg-gray-800 transition outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400">
+                 (focus)="onInputFocus()"
+                 (blur)="onInputBlur()"
+                 (keyup.enter)="onSearchEnter()"
+                 class="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-lg pl-12 pr-4 py-2.5 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:bg-white dark:focus:bg-gray-800 transition outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 shadow-sm">
+          
+          <!-- Search Dropdown (Google Drive Style) -->
+          <div *ngIf="showDropdown() && searchControl.value?.trim()" 
+               class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto py-2 animate-in fade-in zoom-in-95 duration-100">
+             
+              <div *ngIf="isSearching()" class="px-4 py-3 flex items-center justify-center text-gray-500 dark:text-gray-400 gap-2">
+                 <lucide-icon name="loader-2" class="h-4 w-4 animate-spin"></lucide-icon>
+                 <span class="text-sm">Searching...</span>
+              </div>
+
+               <div *ngIf="!isSearching()">
+                   <!-- No Results -->
+                   <div *ngIf="searchResults().length === 0" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400 text-sm">
+                       No results found matching "{{ searchControl.value }}"
+                   </div>
+
+                   <!-- Results List -->
+                   <div *ngIf="searchResults().length > 0">
+                       <!-- Result Count (Debug/Info) -->
+                       <div class="px-4 pb-2 border-b border-gray-100 dark:border-gray-700 mb-2 text-xs text-gray-500 dark:text-gray-400">
+                           Found {{ searchResults().length }} results
+                       </div>
+
+                       @for (item of searchResults(); track item.id) {
+                           <div (mousedown)="onResultClick(item)" class="flex items-center px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer group border-b border-gray-700/10 dark:border-gray-700/50">
+                               <!-- Icon -->
+                               <div class="h-8 w-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0 mr-3">
+                                   @if (item.type === 'folder') {
+                                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+                                   } @else {
+                                       <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                   }
+                               </div>
+                               
+                               <!-- Text (Using flex-col structure that worked in debug) -->
+                               <div class="flex-1 min-w-0 flex flex-col">
+                                   <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" [title]="item.name">{{ item.name }}</span>
+                                   <span class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ item.ownerName || 'Me' }}</span>
+                               </div>
+
+                                 <!-- Action (Using SVG just in case Lucide arrow is also bad, though arrow was likely fine) -->
+                               <div class="ml-2 opacity-0 group-hover:opacity-100 transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                               </div>
+                           </div>
+                       }
+               </div>
+          </div>
         </div>
       </div>
+    </div>
       
       <div class="flex items-center gap-4 ml-4">
         <div class="relative group">
@@ -102,9 +156,14 @@ export class HeaderComponent implements OnInit {
   authService = inject(AuthService);
   fileService = inject(FileSystemService);
   notificationService = inject(NotificationService);
+  previewService = inject(FilePreviewService);
   layoutService = inject(LayoutService);
   router = inject(Router);
   searchControl = new FormControl('');
+
+  searchResults = signal<FileSystemItem[]>([]);
+  showDropdown = signal(false);
+  isSearching = signal(false);
 
   ngOnInit() {
     this.searchControl.valueChanges.pipe(
@@ -113,13 +172,55 @@ export class HeaderComponent implements OnInit {
     ).subscribe(value => {
       const term = value?.trim() ?? '';
       if (term.length > 0) {
-        this.fileService.searchFiles(term).subscribe();
+        this.isSearching.set(true);
+        this.showDropdown.set(true);
+        this.fileService.quickSearch(term, 8).subscribe(results => {
+          console.log('Search Results:', results); // Debug
+          this.searchResults.set(results);
+          this.isSearching.set(false);
+        });
       } else {
-        // Reload current folder or root
-        const currentFolder = this.fileService.currentFolderId();
-        this.fileService.getItems(currentFolder).subscribe();
+        this.searchResults.set([]);
+        this.showDropdown.set(false);
+        this.isSearching.set(false);
+        // If cleared, maybe reset global? For now, onSearchEnter handles global reset
       }
     });
+  }
+
+  onInputFocus() {
+    if (this.searchControl.value?.trim()) {
+      this.showDropdown.set(true);
+    }
+  }
+
+  onInputBlur() {
+    // Small delay to allow click event to register
+    setTimeout(() => this.showDropdown.set(false), 200);
+  }
+
+  onSearchEnter() {
+    const term = this.searchControl.value?.trim() ?? '';
+    this.showDropdown.set(false); // Close dropdown
+    if (term) {
+      this.fileService.searchFiles(term, 1, 15).subscribe();
+    } else {
+      this.fileService.resetSearch();
+      const currentFolder = this.fileService.currentFolderId();
+      this.fileService.getItems(currentFolder).subscribe();
+    }
+  }
+
+  onResultClick(item: FileSystemItem) {
+    this.showDropdown.set(false);
+    this.searchControl.setValue(item.name, { emitEvent: false }); // Optional: set text
+
+    if (item.type === 'folder') {
+      this.router.navigate(['/files', item.id]);
+    } else {
+      // Open preview using global service
+      this.previewService.open(item);
+    }
   }
 
   getNotificationTitle(n: any): string {
@@ -163,5 +264,16 @@ export class HeaderComponent implements OnInit {
 
   logout() {
     this.authService.logout();
+  }
+
+  trackByFileId(index: number, item: FileSystemItem): string {
+    return item.id;
+  }
+
+  getIconName(item: FileSystemItem): string {
+    if (!item) return 'file';
+    if (item.type === 'folder') return 'folder';
+    // Add more extension mapping here if needed, but for now safe default
+    return 'file';
   }
 }

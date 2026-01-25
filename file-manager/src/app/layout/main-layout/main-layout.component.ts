@@ -29,8 +29,8 @@ import { CommonModule } from '@angular/common';
       </app-sidebar>
 
       <div class="flex-1 flex flex-col min-w-0">
-        <app-header class="h-16 flex-shrink-0 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"></app-header>
-        <main class="flex-1 overflow-auto p-4 md:p-6 relative bg-gray-50 dark:bg-gray-900">
+        <app-header class="h-16 flex-shrink-0 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 relative z-20"></app-header>
+        <main class="flex-1 overflow-auto p-4 md:p-6 relative bg-gray-50 dark:bg-gray-900 z-10">
           <router-outlet></router-outlet>
           <app-toast-container></app-toast-container>
         </main>

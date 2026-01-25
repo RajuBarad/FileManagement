@@ -1,17 +1,64 @@
-import { Component, ElementRef, ViewChild, signal, inject } from '@angular/core';
+import { Component, ElementRef, ViewChild, signal, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IconsModule } from '../../core/modules/icons.module';
 import { FileSystemItem } from '../../core/models/file-system.model';
 import { AuthService } from '../../core/services/auth.service';
+import { FilePreviewService } from '../../core/services/file-preview.service';
 import { environment } from '../../../environments/environment';
 import { DomSanitizer, SafeResourceUrl, SafeHtml } from '@angular/platform-browser';
 import * as mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
+import { renderAsync } from 'docx-preview';
+
+import { CKEditorModule } from '@ckeditor/ckeditor5-angular';
+import DecoupledEditor from '@ckeditor/ckeditor5-build-decoupled-document';
 
 @Component({
     selector: 'app-file-preview-modal',
     standalone: true,
-    imports: [CommonModule, IconsModule],
+    imports: [CommonModule, IconsModule, CKEditorModule],
+    styles: [`
+        :host ::ng-deep .document-editor .ck-editor__editable {
+            min-height: 29.7cm;
+            padding: 2cm;
+            background-color: white;
+            box-shadow: none !important;
+            border: none !important;
+            outline: none !important;
+        }
+        :host ::ng-deep .document-editor .ck-focused {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        /* Hide the default border that CKEditor might add */
+        :host ::ng-deep .ck.ck-editor__editable_inline {
+            border: none !important;
+            overflow: hidden;
+        }
+
+        /* Docx Preview Styles */
+        :host ::ng-deep .docx-wrapper-custom {
+            background: transparent !important; 
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        :host ::ng-deep .docx-wrapper-custom > section.docx {
+            background: white !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+            margin-bottom: 40px !important;
+            color: black !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Hide Headers/Footers if requested */
+        :host ::ng-deep .docx-wrapper-custom header,
+        :host ::ng-deep .docx-wrapper-custom footer {
+            display: none !important;
+        }
+    `],
     template: `
     <div *ngIf="isOpen()" class="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <!-- Backdrop -->
@@ -67,29 +114,45 @@ import * as XLSX from 'xlsx';
             <!-- Office Files: Quick View vs Cloud View -->
             @if (fileType === 'office') {
                 <div class="h-full w-full overflow-hidden">
-                    <!-- Quick View (Mammoth/XLSX) -->
-                    <div *ngIf="viewMode() === 'quick'" class="h-full w-full p-8 overflow-auto bg-white text-black prose max-w-none mx-auto" [innerHTML]="officeContent()"></div>
+                    <!-- Quick View (Mammoth/XLSX/DocxPreview) -->
+                    <div *ngIf="viewMode() === 'quick'" class="h-full w-full overflow-auto bg-gray-200 dark:bg-gray-800 justify-center flex p-8">
+                         <!-- Docx Preview Container -->
+                         <div #docxContainer class="docx-wrapper-custom"></div>
+
+                         <!-- Classic HTML Content (Excel) -->
+                         <div *ngIf="officeContent()" 
+                              class="w-[21cm] min-h-[29.7cm] h-fit bg-white text-black shadow-lg p-[2.54cm] mb-8 prose prose-sm max-w-none font-[Calibri,sans-serif]" 
+                              [innerHTML]="officeContent()">
+                         </div>
+                    </div>
                     
-                    <!-- Cloud View (Iframe) -->
+                     <!-- Cloud View (CKEditor) -->
                     <div *ngIf="viewMode() === 'cloud'" class="h-full w-full flex flex-col">
-                         @if (isLocalhost) {
-                            <div class="bg-yellow-50 dark:bg-yellow-900/20 p-4 border-b border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400 text-sm flex items-start gap-2">
-                                <lucide-icon name="alert-triangle" class="h-5 w-5 shrink-0"></lucide-icon>
-                                <div>
-                                    <p class="font-bold">Localhost Limitation</p>
-                                    <p>Cloud editors (OffiDocs, Google, Microsoft) cannot access files on 'localhost'. This feature will only work when your application is deployed to a public server.</p>
-                                </div>
-                            </div>
-                         }
                          
-                         <!-- Cloud Provider Selector -->
+                         <!-- Provider Switcher -->
                          <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 p-2 flex gap-2 justify-center">
+                            <button (click)="setCloudProvider('ckeditor')" [class.bg-blue-100]="cloudProvider() === 'ckeditor'" class="px-3 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700">CKEditor</button>
                             <button (click)="setCloudProvider('offidocs')" [class.bg-blue-100]="cloudProvider() === 'offidocs'" class="px-3 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700">OffiDocs</button>
                             <button (click)="setCloudProvider('google')" [class.bg-blue-100]="cloudProvider() === 'google'" class="px-3 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Google Docs</button>
                             <button (click)="setCloudProvider('microsoft')" [class.bg-blue-100]="cloudProvider() === 'microsoft'" class="px-3 py-1 rounded text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Microsoft Office</button>
                          </div>
 
-                         <iframe [src]="cloudUrl" class="flex-1 w-full border-none"></iframe>
+                         <!-- Iframe for External Providers -->
+                         <iframe *ngIf="cloudProvider() !== 'ckeditor'" [src]="cloudUrl" class="flex-1 w-full border-none"></iframe>
+
+                         <!-- CKEditor Document Layout -->
+                         <div *ngIf="cloudProvider() === 'ckeditor'" class="flex-1 w-full h-full bg-gray-100 dark:bg-gray-900 overflow-hidden flex flex-col relative">
+                            <!-- Toolbar Container -->
+                            <div #toolbarContainer class="w-full bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10 sticky top-0 shadow-sm"></div>
+                            
+                            <!-- Document Container (Scrollable) -->
+                            <div class="flex-1 overflow-auto p-8 flex justify-center" id="document-scroll-container">
+                                <!-- A4 Sheet Simulation -->
+                                <div class="w-[21cm] min-h-[29.7cm] bg-white border border-gray-200 shadow-lg mb-8 document-editor mx-auto">
+                                    <ckeditor [editor]="Editor" [data]="editorData()" (ready)="onReady($event)"></ckeditor>
+                                </div>
+                            </div>
+                         </div>
                     </div>
                 </div>
             }
@@ -150,11 +213,30 @@ export class FilePreviewModalComponent {
     textContent = signal('');
     officeContent = signal<SafeHtml>('');
 
-    // View Modes
     viewMode = signal<'quick' | 'cloud'>('quick');
-    cloudProvider = signal<'offidocs' | 'google' | 'microsoft'>('offidocs');
+    cloudProvider = signal<'offidocs' | 'google' | 'microsoft' | 'ckeditor'>('ckeditor');
     cloudUrl: SafeResourceUrl | null = null;
     isLocalhost = false;
+
+    public Editor: any = DecoupledEditor;
+    editorData = signal('');
+
+    @ViewChild('docxContainer', { read: ElementRef }) docxContainer?: ElementRef;
+
+    @ViewChild('toolbarContainer', { read: ElementRef }) toolbarContainer?: ElementRef;
+
+    onReady(editor: any) {
+        // Insert the toolbar before the editable area.
+        const toolbarElement = editor.ui.view.toolbar.element;
+        const editableElement = editor.ui.getEditableElement();
+
+        if (this.toolbarContainer && toolbarElement) {
+            this.toolbarContainer.nativeElement.appendChild(toolbarElement);
+        }
+
+        // DecoupledEditor requires explicit styling for the editable area if not done automatically
+        // But we have wrapped it
+    }
 
     file: FileSystemItem | null = null;
     fileUrl: string = '';
@@ -163,9 +245,20 @@ export class FilePreviewModalComponent {
 
     private sanitizer = inject(DomSanitizer);
     private authService = inject(AuthService);
+    private previewService = inject(FilePreviewService);
 
     constructor() {
         this.isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+        // Sync with service
+        effect(() => {
+            const file = this.previewService.file();
+            if (file) {
+                this.open(file);
+            } else {
+                this.closeInternal();
+            }
+        }, { allowSignalWrites: true });
     }
 
     open(file: FileSystemItem) {
@@ -209,28 +302,44 @@ export class FilePreviewModalComponent {
         }
     }
 
-    setCloudProvider(provider: 'offidocs' | 'google' | 'microsoft') {
+    setCloudProvider(provider: 'offidocs' | 'google' | 'microsoft' | 'ckeditor') {
         this.cloudProvider.set(provider);
         this.updateCloudUrl();
     }
 
     updateCloudUrl() {
-        const encodedUrl = encodeURIComponent(this.fileUrl);
-        let url = '';
-
-        switch (this.cloudProvider()) {
-            case 'offidocs':
-                // Attempting to use OffiDocs public viewer pattern
-                url = `https://www.offidocs.com/community/offidocs_edit.php?fileurl=${encodedUrl}`;
-                break;
-            case 'google':
-                url = `https://docs.google.com/viewer?url=${encodedUrl}&embedded=true`;
-                break;
-            case 'microsoft':
-                url = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
-                break;
+        if (this.cloudProvider() === 'ckeditor') {
+            setTimeout(() => this.initCKEditor(), 0);
         }
-        this.cloudUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+    }
+
+    initCKEditor() {
+        this.loading.set(true);
+
+        // 1. Fetch the file content
+        fetch(this.fileUrl)
+            .then(res => res.arrayBuffer())
+            .then(async buffer => {
+                let htmlContent = '';
+
+                // 2. Convert DOCX to HTML using Mammoth (since Canvas Editor needs HTML or JSON)
+                const ext = this.file?.name.split('.').pop()?.toLowerCase();
+                if (ext === 'docx') {
+                    const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
+                    htmlContent = result.value;
+                } else {
+                    htmlContent = '<p>Preview not supported for this format in Document Editor.</p>';
+                }
+
+                // 3. Set content for CKEditor
+                this.editorData.set(htmlContent);
+                this.loading.set(false);
+
+            })
+            .catch(err => {
+                console.error('Error loading file for CKEditor', err);
+                this.loading.set(false);
+            });
     }
 
     loadTextContent() {
@@ -246,31 +355,50 @@ export class FilePreviewModalComponent {
             });
     }
 
-    loadOfficeContent() {
-        fetch(this.fileUrl)
-            .then(res => res.arrayBuffer())
-            .then(async buffer => {
-                const ext = this.file?.name.split('.').pop()?.toLowerCase();
-                if (ext === 'docx') {
-                    const result = await mammoth.convertToHtml({ arrayBuffer: buffer });
-                    this.officeContent.set(this.sanitizer.bypassSecurityTrustHtml(result.value));
-                } else if (['xlsx', 'xls', 'csv'].includes(ext || '')) {
-                    const workbook = XLSX.read(buffer, { type: 'array' });
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
-                    const html = XLSX.utils.sheet_to_html(worksheet);
-                    this.officeContent.set(this.sanitizer.bypassSecurityTrustHtml(html));
-                }
+    async loadOfficeContent() {
+        if (!this.fileUrl) return;
+
+        try {
+            const buffer = await fetch(this.fileUrl).then(res => res.arrayBuffer());
+            const ext = this.file?.name.split('.').pop()?.toLowerCase();
+
+            if (ext === 'docx') {
+                // Use docx-preview for Word files (preserves layout/pagination)
+                setTimeout(async () => {
+                    if (this.docxContainer) {
+                        this.docxContainer.nativeElement.innerHTML = '';
+                        await renderAsync(buffer, this.docxContainer.nativeElement, undefined, {
+                            inWrapper: false, // We provide the wrapper
+                            ignoreWidth: false,
+                            experimental: true,
+                            breakPages: true,
+                            ignoreLastRenderedPageBreak: false
+                        });
+                        this.loading.set(false);
+                    }
+                }, 0); // Tick to allow viewchild to init
+            } else if (['xlsx', 'xls', 'csv'].includes(ext || '')) {
+                const workbook = XLSX.read(buffer, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const html = XLSX.utils.sheet_to_html(worksheet);
+                this.officeContent.set(this.sanitizer.bypassSecurityTrustHtml(html));
                 this.loading.set(false);
-            })
-            .catch((err) => {
-                console.error(err);
-                this.officeContent.set(this.sanitizer.bypassSecurityTrustHtml('<p class="text-red-500">Error rendering document.</p>'));
+            } else {
                 this.loading.set(false);
-            });
+            }
+        } catch (err) {
+            console.error(err);
+            this.officeContent.set(this.sanitizer.bypassSecurityTrustHtml('<p class="text-red-500">Error rendering document.</p>'));
+            this.loading.set(false);
+        }
     }
 
     close() {
+        this.previewService.close(); // Triggers effect -> closeInternal
+    }
+
+    private closeInternal() {
         this.isOpen.set(false);
         this.file = null;
         this.textContent.set('');
