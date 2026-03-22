@@ -17,12 +17,17 @@ import { LayoutService } from '../../core/services/layout.service';
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive, IconsModule, ModalComponent],
   template: `
-    <div class="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 relative transition-colors duration-300">
-      <div class="p-6">
-        <div class="flex items-center gap-2 mb-8">
+    <div class="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 relative transition-colors duration-300 pt-[env(safe-area-inset-top,0px)]">
+      
+      <!-- Fixed Header for Logo Alignment (Matches Topbar Height) -->
+      <div class="h-16 flex items-center px-6 shrink-0">
+        <div class="flex items-center gap-2">
            <lucide-icon name="cloud" class="h-8 w-8 text-blue-600"></lucide-icon>
           <span class="text-xl font-bold text-gray-800 dark:text-white">BVA Drive</span>
         </div>
+      </div>
+
+      <div class="px-6 pb-6">
         
         <div class="relative">
           <button (click)="toggleNewMenu()" class="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-full py-3 px-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md transition shadow-sm mb-2">
@@ -53,7 +58,7 @@ import { LayoutService } from '../../core/services/layout.service';
         <input #folderInput type="file" class="hidden" webkitdirectory directory multiple (change)="onFolderSelected($event)">
       </div>
       
-      <nav class="flex-1 px-4 space-y-1">
+      <nav class="flex-1 px-4 space-y-1 overflow-y-auto">
         <a routerLink="/files" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" [routerLinkActiveOptions]="{exact: false}" 
            (click)="layoutService.closeSidebar()"
            class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">

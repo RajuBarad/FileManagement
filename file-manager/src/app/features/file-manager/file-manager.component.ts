@@ -13,6 +13,7 @@ import { LucideAngularModule, ChevronRight, Home, Folder, FolderOpen, Grid, List
 // rotate-ccw for restore
 import { ModalComponent } from '../../components/modal/modal.component';
 import { VersionHistoryDialogComponent } from '../../components/version-history-dialog/version-history-dialog';
+import { MoveDialogComponent } from '../../components/move-dialog/move-dialog.component';
 import Swal from 'sweetalert2';
 
 import { FileUploaderService } from '../../core/services/file-uploader.service';
@@ -88,9 +89,16 @@ import { NotificationService } from '../../core/services/notification.service';
              <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               @for (item of folders(); track item.id) {
                 <div class="group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-sm transition cursor-pointer flex items-center justify-between p-3 relative"
-                     (contextmenu)="$event.preventDefault(); openContextMenu($event, item)">
+                     [draggable]="true"
+                     (dragstart)="onDragStart($event, item)"
+                     (dragover)="onDragOverFolder($event, item)"
+                     (dragleave)="onDragLeaveFolder($event)"
+                     (drop)="onDropOnFolder($event, item)"
+                     (dragend)="onDragEnd()"
+                     (contextmenu)="$event.preventDefault(); openContextMenu($event, item)"
+                     (dblclick)="onItemClick(item)">
                     
-                    <div class="flex items-center gap-3 flex-1 min-w-0" (dblclick)="onItemClick(item)">
+                    <div class="flex items-center gap-3 flex-1 min-w-0 pointer-events-none">
                         <div class="text-gray-500 relative">
                            <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 fill-gray-500 text-gray-500 dark:text-gray-400 dark:fill-gray-400/20"></lucide-icon>
                            <div *ngIf="item.isLocked" class="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 border border-white" [title]="'Locked by ' + item.lockedByUserName">
@@ -134,6 +142,9 @@ import { NotificationService } from '../../core/services/notification.service';
                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
                      @for (item of filesList(); track item.id) {
                        <tr (dblclick)="onItemClick(item)" class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition select-none"
+                           [draggable]="true"
+                           (dragstart)="onDragStart($event, item)"
+                           (dragend)="onDragEnd()"
                            (contextmenu)="$event.preventDefault(); openContextMenu($event, item)">
                          <td class="px-4 py-3">
                            <div class="flex items-center gap-3">
@@ -220,9 +231,15 @@ import { NotificationService } from '../../core/services/notification.service';
                  <!-- Folders -->
                  @for (item of folders(); track item.id) {
                    <tr (dblclick)="onItemClick(item)" class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition select-none"
-                       (contextmenu)="$event.preventDefault(); openContextMenu($event, item)">
+                       (contextmenu)="$event.preventDefault(); openContextMenu($event, item)"
+                        [draggable]="true"
+                        (dragstart)="onDragStart($event, item)"
+                        (dragover)="onDragOverFolder($event, item)"
+                        (dragleave)="onDragLeaveFolder($event)"
+                        (drop)="onDropOnFolder($event, item)"
+                        (dragend)="onDragEnd()">
                      <td class="px-4 py-2">
-                       <div class="flex items-center gap-3">
+                       <div class="flex items-center gap-3 pointer-events-none">
                          <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 text-gray-500 dark:text-gray-400 fill-gray-500/20 dark:fill-gray-400/10 flex-shrink-0"></lucide-icon>
                          <span class="font-medium text-gray-700 dark:text-gray-200 truncate max-w-[200px] md:max-w-[300px]">{{ item.name }}</span>
                          <lucide-icon *ngIf="item.accessType === 'Shared' || item.isShared" name="users" class="h-4 w-4 text-blue-500 ml-2" title="Shared"></lucide-icon>
@@ -250,7 +267,10 @@ import { NotificationService } from '../../core/services/notification.service';
                  <!-- Files -->
                  @for (item of filesList(); track item.id) {
                    <tr (dblclick)="onItemClick(item)" class="group hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition select-none"
-                       (contextmenu)="$event.preventDefault(); openContextMenu($event, item)">
+                       (contextmenu)="$event.preventDefault(); openContextMenu($event, item)"
+                        [draggable]="true"
+                        (dragstart)="onDragStart($event, item)"
+                        (dragend)="onDragEnd()">
                      <td class="px-4 py-2">
                        <div class="flex items-center gap-3">
                           <lucide-icon [name]="getIcon(item.type)" class="h-5 w-5 text-red-500 flex-shrink-0" *ngIf="item.type === 'pdf'"></lucide-icon>
@@ -365,6 +385,11 @@ import { NotificationService } from '../../core/services/notification.service';
              Delete Permanently
           </button>
 
+          <button *ngIf="!isTrashView()" (click)="openMoveDialog()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+              <lucide-icon name="folder-up" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
+             Move
+          </button>
+
           <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="renameSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <lucide-icon name="edit-3" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
              Rename
@@ -456,20 +481,24 @@ export class FileManagerComponent implements OnInit {
 
 
   isDragging = signal(false);
+  draggedItem = signal<FileSystemItem | null>(null);
 
   @HostListener('dragover', ['$event'])
   onDragOver(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
-    this.isDragging.set(true);
+    
+    // Only trigger upload overlay if dragging external files
+    const isFileDrag = event.dataTransfer?.types.includes('Files');
+    if (isFileDrag) {
+      this.isDragging.set(true);
+    }
   }
 
   @HostListener('dragleave', ['$event'])
   onDragLeave(event: DragEvent) {
     event.preventDefault();
     event.stopPropagation();
-    // Only set false if leaving the window or main container (logic can be adjusted)
-    // Simple check: if relatedTarget is null (left window) or we want strict container leave
     if (event.relatedTarget === null) {
       this.isDragging.set(false);
     }
@@ -484,6 +513,59 @@ export class FileManagerComponent implements OnInit {
     if (event.dataTransfer?.items) {
       this.uploader.handleDroppedItems(event.dataTransfer.items);
     }
+  }
+
+  // INTERNAL DRAG & DROP HANDLERS
+  onDragStart(event: DragEvent, item: FileSystemItem) {
+    // Save item ID in transfer
+    event.dataTransfer?.setData('text/plain', item.id);
+    this.draggedItem.set(item);
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+    }
+  }
+
+    onDragOverFolder(event: DragEvent, folder: FileSystemItem) {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    if (folder.type !== 'folder') return;
+    
+    const dragItem = this.draggedItem();
+    if (dragItem && dragItem.id === folder.id) return; // Can't drop on itself
+
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+    
+    const element = event.currentTarget as HTMLElement;
+    element.classList.add('bg-blue-50/80', 'dark:bg-blue-900/40', 'border-2', 'border-blue-500', 'border-dashed', 'scale-105', 'shadow-md', 'z-10');
+  }
+
+  onDragLeaveFolder(event: DragEvent) {
+    const element = event.currentTarget as HTMLElement;
+    element.classList.remove('bg-blue-50/80', 'dark:bg-blue-900/40', 'border-2', 'border-blue-500', 'border-dashed', 'scale-105', 'shadow-md', 'z-10');
+  }
+
+  onDropOnFolder(event: DragEvent, targetFolder: FileSystemItem) {
+    event.preventDefault();
+    event.stopPropagation();
+    this.onDragLeaveFolder(event); // Clean up style
+
+    const itemId = event.dataTransfer?.getData('text/plain');
+    if (!itemId || itemId === targetFolder.id) return;
+
+    this.fileService.moveItem(itemId, targetFolder.id).subscribe({
+      next: () => {
+        this.toast.show('Item moved successfully', 'success');
+        this.loadItems(this.fileService.currentFolderId());
+      }
+    });
+    this.draggedItem.set(null);
+  }
+
+  onDragEnd() {
+    this.draggedItem.set(null);
   }
 
   @ViewChild('renameModal') renameModal!: ModalComponent;
@@ -743,6 +825,31 @@ export class FileManagerComponent implements OnInit {
       error: (err) => this.toast.show('Failed to unlock', 'error')
     });
     this.closeContextMenu();
+  }
+  openMoveDialog() {
+    const item = this.selectedItem();
+    if (!item) return;
+
+    this.closeContextMenu();
+
+    const dialogRef = this.dialog.open<string | null>(MoveDialogComponent, {
+      data: {
+        itemId: item.id,
+        itemName: item.name,
+        parentId: item.parentId
+      }
+    });
+
+    dialogRef.closed.subscribe(targetFolderId => {
+      if (targetFolderId !== undefined) { 
+        this.fileService.moveItem(item.id, targetFolderId).subscribe({
+          next: () => {
+            this.toast.show('Item moved successfully', 'success');
+            this.loadItems(this.fileService.currentFolderId());
+          }
+        });
+      }
+    });
   }
 
   renameSelectedItem() {

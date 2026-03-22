@@ -17,25 +17,25 @@ import { LayoutService } from '../../core/services/layout.service';
   standalone: true,
   imports: [CommonModule, IconsModule, RouterModule, ReactiveFormsModule],
   template: `
-    <header class="flex items-center justify-between px-3 md:px-6 h-full gap-3">
+    <header class="flex items-center justify-between px-2 md:px-6 h-full gap-2 md:gap-3">
         <!-- Mobile Menu Toggler -->
-        <button (click)="layoutService.toggleSidebar()" class="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
+        <button (click)="layoutService.toggleSidebar()" class="md:hidden p-2 text-gray-500 hover:bg-gray-100 rounded-lg flex-shrink-0">
             <lucide-icon name="menu" class="h-6 w-6"></lucide-icon>
         </button>
 
-      <div class="flex-1 max-w-2xl">
+      <div class="flex-1 max-w-2xl min-w-0">
         <div class="relative z-50">
-          <lucide-icon name="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none"></lucide-icon>
+          <lucide-icon name="search" class="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none"></lucide-icon>
           <input type="text" placeholder="Search in Drive" 
                  [formControl]="searchControl"
                  (focus)="onInputFocus()"
                  (blur)="onInputBlur()"
                  (keyup.enter)="onSearchEnter()"
-                 class="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-lg pl-12 pr-4 py-2.5 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:bg-white dark:focus:bg-gray-800 transition outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 shadow-sm">
+                 class="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-lg pl-9 md:pl-12 pr-2 md:pr-4 py-2.5 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 focus:bg-white dark:focus:bg-gray-800 transition outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400 shadow-sm text-sm truncate">
           
           <!-- Search Dropdown (Google Drive Style) -->
           <div *ngIf="showDropdown() && searchControl.value?.trim()" 
-               class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto py-2 animate-in fade-in zoom-in-95 duration-100">
+               class="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 max-h-96 overflow-y-auto py-2 animate-in fade-in zoom-in-95 duration-100 w-[calc(100vw-20px)] md:w-full z-[100]">
              
               <div *ngIf="isSearching()" class="px-4 py-3 flex items-center justify-center text-gray-500 dark:text-gray-400 gap-2">
                  <lucide-icon name="loader-2" class="h-4 w-4 animate-spin"></lucide-icon>
@@ -84,9 +84,9 @@ import { LayoutService } from '../../core/services/layout.service';
       </div>
     </div>
       
-      <div class="flex items-center gap-4 ml-4">
+      <div class="flex items-center gap-2 md:gap-4 ml-2 md:ml-4 flex-shrink-0">
         <div class="relative group">
-          <button class="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition relative">
+          <button class="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition relative shrink-0">
              <lucide-icon name="bell" class="h-5 w-5"></lucide-icon>
              <span *ngIf="notificationService.unreadCount() > 0" class="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full border border-white"></span>
           </button>
@@ -114,17 +114,17 @@ import { LayoutService } from '../../core/services/layout.service';
              </div>
           </div>
         </div>
-        <button *ngIf="authService.isAdmin()" routerLink="/admin" class="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition relative tooltip-container">
+        <button *ngIf="authService.isAdmin()" routerLink="/admin" class="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition relative tooltip-container shrink-0">
           <lucide-icon name="settings" class="h-5 w-5"></lucide-icon>
         </button>
         
         <div class="relative group">
-          <button class="flex items-center gap-2 focus:outline-none">
+          <button class="flex items-center gap-2 focus:outline-none shrink-0">
             <div class="h-8 w-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-medium shadow-sm">
               {{ getUserInitials() }}
             </div>
             <span class="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-200">{{ authService.currentUser()?.name }}</span>
-            <lucide-icon name="chevron-down" class="h-4 w-4 text-gray-500"></lucide-icon>
+            <lucide-icon name="chevron-down" class="h-4 w-4 text-gray-500 hidden md:block"></lucide-icon>
           </button>
           
           <!-- Dropdown -->

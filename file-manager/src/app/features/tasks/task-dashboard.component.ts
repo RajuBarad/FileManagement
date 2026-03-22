@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, ViewChild, computed, effect } from '@angular/core';
+import { Component, OnInit, inject, signal, effect } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { TaskService } from '../../core/services/task.service';
@@ -7,13 +7,12 @@ import { IconsModule } from '../../core/modules/icons.module';
 import { AuthService } from '../../core/services/auth.service';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
-import { TaskModalComponent } from './task-modal.component';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
 
 @Component({
     selector: 'app-task-dashboard',
     standalone: true,
-    imports: [CommonModule, IconsModule, TaskModalComponent, FormsModule, DragDropModule],
+    imports: [CommonModule, IconsModule, FormsModule, DragDropModule],
     template: `
     <div class="h-full flex flex-col bg-gray-50 dark:bg-gray-900">
       <!-- Header -->
@@ -297,8 +296,6 @@ import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from 
           </div>
         </div>
       </div>
-
-      <app-task-modal #taskModal (onSave)="loadTasks()"></app-task-modal>
     </div>
   `
 })
@@ -317,9 +314,6 @@ export class TaskDashboardComponent implements OnInit {
     filterAssignee = signal<string>('All');
     filterDueDate = signal<string>('All');
 
-    @ViewChild('taskModal') taskModal!: TaskModalComponent;
-
-    // Column Signals (Writable to allow CDK manipulation)
     // Column Signals (Writable to allow CDK manipulation)
     pendingTasks = signal<Task[]>([]);
     inProgressTasks = signal<Task[]>([]);
@@ -330,7 +324,7 @@ export class TaskDashboardComponent implements OnInit {
         // Effect to reorganize tasks when filters change
         effect(() => {
             // Read signals to track dependencies
-            this.tasks();
+            const currentTasks = this.tasks();
             this.filterPriority();
             this.filterAssignee();
             this.filterDueDate();
@@ -343,6 +337,11 @@ export class TaskDashboardComponent implements OnInit {
     ngOnInit() {
         this.loadTasks();
         this.loadUsers();
+
+        // Listen for Global Refresh
+        this.taskService.refreshTasks$.subscribe(() => {
+            this.loadTasks();
+        });
 
         this.route.queryParams.subscribe(params => {
             const openId = params['openTaskId'];
@@ -374,18 +373,6 @@ export class TaskDashboardComponent implements OnInit {
             const openId = this.route.snapshot.queryParams['openTaskId'];
             if (openId) {
                 this.checkAndOpenTask(openId);
-            }
-
-            const action = this.route.snapshot.queryParams['action'];
-            if (action === 'create') {
-                setTimeout(() => {
-                    this.openCreateModal();
-                    this.router.navigate([], {
-                        queryParams: { action: null },
-                        queryParamsHandling: 'merge',
-                        replaceUrl: true
-                    });
-                }, 100);
             }
         });
     }
@@ -453,7 +440,7 @@ export class TaskDashboardComponent implements OnInit {
         const task = this.tasks().find(t => t.id == openId || t.id == openId.toUpperCase());
         if (task) {
             setTimeout(() => {
-                this.taskModal.open('comments', task);
+                this.taskService.openModal('comments', task);
                 this.router.navigate([], {
                     queryParams: { openTaskId: null, t: null },
                     queryParamsHandling: 'merge',
@@ -521,15 +508,15 @@ export class TaskDashboardComponent implements OnInit {
     }
 
     openCreateModal() {
-        this.taskModal.open('create'); // Open empty for create
+        this.taskService.openModal('create');
     }
 
     openEditModal(task: Task) {
-        this.taskModal.open('edit', task); // Pass task for edit
+        this.taskService.openModal('edit', task);
     }
 
     openCommentsModal(task: Task) {
-        this.taskModal.open('comments', task);
+        this.taskService.openModal('comments', task);
     }
 
     drop(event: CdkDragDrop<Task[]>) {
@@ -562,7 +549,7 @@ export class TaskDashboardComponent implements OnInit {
                 next: () => {
                     this.loadTasks(); // Reload to ensure consistency
                 },
-                error: (err) => {
+                error: (err: any) => {
                     console.error('Update failed', err);
                     this.loadTasks(); // Revert on error
                 }

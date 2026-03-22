@@ -400,6 +400,32 @@ export class FileSystemService {
         return of({} as FileSystemItem);
     }
 
+    moveItem(id: string, targetFolderId: string | null): Observable<any> {
+        const currentUser = this.authService.currentUser();
+        if (!currentUser) return throwError(() => new Error('Not logged in'));
+
+        return this.http.post<any>(`${this.API_BASE}/move.php`, { 
+            id, 
+            userId: currentUser.id, 
+            targetFolderId 
+        }).pipe(
+            map((response) => {
+                // Refresh local list following move if needed, 
+                // or let the component do it.
+                // It's best if the component handles refreshes or we update signal here.
+                // Since this item is leaving the current folder views, 
+                // we should remove it from the signal if the current view doesn't match new parent.
+                // However, the component usually handles 'loadItems'.
+                return response;
+            }),
+            catchError(err => {
+                const msg = err.error?.message || 'Move failed';
+                this.toast.show(msg, 'error');
+                return throwError(() => new Error(msg));
+            })
+        );
+    }
+
     getBreadcrumbs(folderId: string | null): Observable<{ id: string, name: string, ownerId: string }[]> {
         if (!folderId) return of([]);
         return this.http.get<{ id: string, name: string, ownerId: string }[]>(`${this.API_BASE}/breadcrumbs.php?folderId=${folderId}`);

@@ -1,15 +1,17 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ViewChild, OnInit } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { HeaderComponent } from '../../components/header/header.component';
 import { ToastContainerComponent } from '../../core/services/toast.service';
 import { LayoutService } from '../../core/services/layout.service';
 import { CommonModule } from '@angular/common';
+import { TaskModalComponent } from '../../features/tasks/task-modal.component';
+import { TaskService } from '../../core/services/task.service';
 
 @Component({
   selector: 'app-main-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, SidebarComponent, HeaderComponent, ToastContainerComponent],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, HeaderComponent, ToastContainerComponent, TaskModalComponent],
   template: `
     <div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       
@@ -29,15 +31,27 @@ import { CommonModule } from '@angular/common';
       </app-sidebar>
 
       <div class="flex-1 flex flex-col min-w-0">
-        <app-header class="h-16 flex-shrink-0 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 relative z-20"></app-header>
+        <app-header class="h-[calc(4rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] flex-shrink-0 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 relative z-20"></app-header>
         <main class="flex-1 overflow-auto p-4 md:p-6 relative bg-gray-50 dark:bg-gray-900 z-10">
           <router-outlet></router-outlet>
           <app-toast-container></app-toast-container>
         </main>
       </div>
+
+      <!-- Global Task Modal (Outside Main Stacking Context) -->
+      <app-task-modal #globalTaskModal (onSave)="taskService.triggerRefresh()"></app-task-modal>
     </div>
   `
 })
-export class MainLayoutComponent {
+export class MainLayoutComponent implements OnInit {
   layoutService = inject(LayoutService);
+  taskService = inject(TaskService);
+
+  @ViewChild('globalTaskModal') taskModal!: TaskModalComponent;
+
+  ngOnInit() {
+    this.taskService.modalRequest$.subscribe(req => {
+      this.taskModal.open(req.mode, req.task);
+    });
+  }
 }

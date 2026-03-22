@@ -4,6 +4,8 @@ import { AuthService } from './auth.service';
 import { environment } from '../../../environments/environment';
 import { ToastService } from './toast.service';
 import { interval, switchMap, filter, of } from 'rxjs';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 export interface Notification {
     id: number | string;
@@ -27,6 +29,11 @@ export class NotificationService {
     unreadCount = signal(0);
 
     constructor() {
+        // Request permissions for native notifications
+        if (Capacitor.isNativePlatform()) {
+            LocalNotifications.requestPermissions();
+        }
+
         // Start polling when user is logged in
         // Simple polling every 30 seconds
         interval(30000).pipe(
@@ -48,15 +55,32 @@ export class NotificationService {
 
         return this.http.get<Notification[]>(`${this.API_BASE}/get_notifications.php?userId=${user.id}`).pipe(
             filter(notes => {
-                // Check if we have new ones to show toast?
+                // Check if we have new ones to show toast/notification?
                 // Simple logic: if count increases? 
                 // Ideally fetching only unread.
                 const currentIds = new Set(this.notifications().map(n => n.id));
-                notes.forEach(n => {
+                notes.forEach(async n => {
                     if (!currentIds.has(n.id)) {
                         // New notification!
                         if (n.type === 'UnlockAlert') {
                             this.toast.show(n.message, 'info');
+                        }
+
+                        // Native Notification Check
+                        if (Capacitor.isNativePlatform()) {
+                            // Schedule a local notification
+                            await LocalNotifications.schedule({
+                                notifications: [{
+                                    title: n.type === 'TaskAssignment' ? 'New Task Assigned' : 'Bharat Vasoya & Associates',
+                                    body: n.message,
+                                    id: typeof n.id === 'number' ? n.id : Math.floor(Math.random() * 100000), // Ensure int ID
+                                    schedule: { at: new Date(Date.now() + 100) }, // Immediate
+                                    sound: undefined,
+                                    attachments: undefined,
+                                    actionTypeId: '',
+                                    extra: null
+                                }]
+                            });
                         }
                     }
                 });
@@ -69,6 +93,7 @@ export class NotificationService {
             })
         );
     }
+
 
     requestUnlockNotification(fileId: string) {
         const user = this.auth.currentUser();

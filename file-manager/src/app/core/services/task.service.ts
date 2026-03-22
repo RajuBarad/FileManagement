@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject } from 'rxjs';
 import { Task, CreateTaskRequest } from '../models/task.model';
 import { map } from 'rxjs/operators';
 import { AuthService } from './auth.service';
@@ -12,7 +12,23 @@ import { environment } from '../../../environments/environment';
 export class TaskService {
     private http = inject(HttpClient);
     private authService = inject(AuthService);
-    private readonly API_BASE = `${environment.apiUrl}/tasks`; // Adjust if needed
+    private readonly API_BASE = `${environment.apiUrl}/tasks`;
+
+    // Global Modal State
+    private openModalSource = new Subject<{ mode: 'create' | 'edit' | 'comments', task?: Task }>();
+    public modalRequest$ = this.openModalSource.asObservable();
+
+    // Refresh Trigger for Dashboard
+    private refreshParamsSource = new Subject<void>();
+    public refreshTasks$ = this.refreshParamsSource.asObservable();
+
+    openModal(mode: 'create' | 'edit' | 'comments', task?: Task) {
+        this.openModalSource.next({ mode, task });
+    }
+
+    triggerRefresh() {
+        this.refreshParamsSource.next();
+    }
 
     getTasks(showArchived: boolean = false): Observable<Task[]> {
         const userId = this.authService.currentUser()?.id;
