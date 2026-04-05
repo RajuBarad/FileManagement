@@ -5,8 +5,27 @@ if(isset($_GET['id']) && isset($_GET['userId'])) {
     $fileId = $_GET['id'];
     $userId = $_GET['userId']; // Requesting User
 
-    $sql = "SELECT FilePath, FileName, IsLocked, LockedByUserId FROM Files WHERE Id = ?";
-    $stmt = sqlsrv_query($conn, $sql, array($fileId));
+    // Access Check (Owner or Inherited)
+    $accessSql = "
+        WITH Hierarchy AS (
+            SELECT Id, ParentId, OwnerId FROM Files WHERE Id = ? AND IsDeleted = 0
+            UNION ALL
+            SELECT f.Id, f.ParentId, f.OwnerId FROM Files f
+            INNER JOIN Hierarchy h ON f.Id = h.ParentId
+        )
+        SELECT (SELECT COUNT(*) FROM Hierarchy h2 
+                LEFT JOIN GenericShares gs ON h2.Id = gs.FileId
+                WHERE h2.OwnerId = ? OR gs.SharedWithUserId = ?) as hasAccess,
+               f.FilePath, f.FileName, f.IsLocked, f.LockedByUserId
+        FROM Files f
+        WHERE f.Id = ?
+    ";
+    $stmt = sqlsrv_query($conn, $accessSql, array($fileId, $userId, $userId, $fileId));
+
+    if($stmt === false || ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) === null || $row['hasAccess'] == 0) {
+        http_response_code(403);
+        die("Permission denied or file not found.");
+    }
 
     if($stmt === false) {
         http_response_code(500);

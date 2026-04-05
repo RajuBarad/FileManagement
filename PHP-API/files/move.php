@@ -21,18 +21,27 @@ $targetFolderId = isset($data->targetFolderId) ? $data->targetFolderId : null;
 file_put_contents("../php_move_debug.log", date('Y-m-d H:i:s') . " - Move. ID: $id, User: $userId, Target: " . ($targetFolderId ?? 'NULL') . "\n", FILE_APPEND);
 
 
-// 1. Verify ownership or share access of the item to move
-$checkSql = "SELECT f.Id, f.FileName, f.IsFolder, f.ParentId FROM Files f 
-             LEFT JOIN GenericShares gs ON f.Id = gs.FileId
-             WHERE f.Id = ? AND (f.OwnerId = ? OR gs.SharedWithUserId = ?) AND f.IsDeleted = 0";
-$checkStmt = sqlsrv_query($conn, $checkSql, array($id, $userId, $userId));
+// 1. Verify ownership or inherited share access of the item to move
+$checkSql = "
+    WITH Hierarchy AS (
+        SELECT Id, ParentId, OwnerId, FileName, IsFolder FROM Files WHERE Id = ? AND IsDeleted = 0
+        UNION ALL
+        SELECT f.Id, f.ParentId, f.OwnerId, f.FileName, f.IsFolder FROM Files f
+        INNER JOIN Hierarchy h ON f.Id = h.ParentId
+    )
+    SELECT h.Id, h.FileName, h.IsFolder, h.ParentId,
+           (SELECT COUNT(*) FROM Hierarchy h2 
+            LEFT JOIN GenericShares gs ON h2.Id = gs.FileId
+            WHERE h2.OwnerId = ? OR gs.SharedWithUserId = ?) as hasAccess
+    FROM Hierarchy h
+    WHERE h.Id = ?
+";
+$checkStmt = sqlsrv_query($conn, $checkSql, array($id, $userId, $userId, $id));
 
-if($checkStmt === false || sqlsrv_has_rows($checkStmt) === false) {
+if($checkStmt === false || ($item = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC)) === null || $item['hasAccess'] == 0) {
     http_response_code(403);
     die(json_encode(array("message" => "Permission denied or file not found.")));
 }
-
-$item = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC);
 $itemName = $item['FileName'];
 $isFolder = $item['IsFolder'];
 $currentParentId = $item['ParentId'];
@@ -70,23 +79,36 @@ if ($targetFolderId !== null) {
         }
     }
 
-    $targetSql = "SELECT Id, IsFolder FROM Files WHERE Id = ? AND IsDeleted = 0";
-    $targetStmt = sqlsrv_query($conn, $targetSql, array($targetFolderId));
-    if ($targetStmt === false || sqlsrv_has_rows($targetStmt) === false) {
+    // Verify access to Target Folder (Owner or Inherited)
+    $targetSql = "
+        WITH TargetHierarchy AS (
+            SELECT Id, ParentId, OwnerId, IsFolder FROM Files WHERE Id = ? AND IsDeleted = 0
+            UNION ALL
+            SELECT f.Id, f.ParentId, f.OwnerId, f.IsFolder FROM Files f
+            INNER JOIN TargetHierarchy th ON f.Id = th.ParentId
+        )
+        SELECT th.IsFolder,
+               (SELECT COUNT(*) FROM TargetHierarchy th2 
+                LEFT JOIN GenericShares gs ON th2.Id = gs.FileId
+                WHERE th2.OwnerId = ? OR gs.SharedWithUserId = ?) as hasAccess
+        FROM TargetHierarchy th
+        WHERE th.Id = ?
+    ";
+    $targetStmt = sqlsrv_query($conn, $targetSql, array($targetFolderId, $userId, $userId, $targetFolderId));
+    if ($targetStmt === false || ($target = sqlsrv_fetch_array($targetStmt, SQLSRV_FETCH_ASSOC)) === null || $target['hasAccess'] == 0) {
         http_response_code(404);
-        die(json_encode(array("message" => "Target folder not found.")));
+        die(json_encode(array("message" => "Target folder not found or no access.")));
     }
     
-    $target = sqlsrv_fetch_array($targetStmt, SQLSRV_FETCH_ASSOC);
     if (!$target['IsFolder']) {
         http_response_code(400);
         die(json_encode(array("message" => "Target is not a folder.")));
     }
 }
 
-// 3. Check for name collision in target folder
-$dupSql = "SELECT Id FROM Files WHERE FileName = ? AND OwnerId = ? " . ($targetFolderId ? "AND ParentId = ?" : "AND ParentId IS NULL") . " AND IsDeleted = 0";
-$params = $targetFolderId ? array($itemName, $userId, $targetFolderId) : array($itemName, $userId);
+// 3. Check for name collision in target folder (Regardless of Owner)
+$dupSql = "SELECT Id FROM Files WHERE FileName = ? AND " . ($targetFolderId ? "ParentId = ?" : "ParentId IS NULL AND OwnerId = ?") . " AND IsDeleted = 0";
+$params = $targetFolderId ? array($itemName, $targetFolderId) : array($itemName, $userId);
 $dupStmt = sqlsrv_query($conn, $dupSql, $params);
 
 if($dupStmt !== false && sqlsrv_has_rows($dupStmt) === true) {

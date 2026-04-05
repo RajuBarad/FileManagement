@@ -18,11 +18,21 @@ $id = $data->id;
 $ownerId = $data->ownerId;
 $newName = $data->name;
 
-// Verify ownership
-$checkSql = "SELECT Id FROM Files WHERE Id = ? AND OwnerId = ?";
-$checkStmt = sqlsrv_query($conn, $checkSql, array($id, $ownerId));
+// Verify access (Owner or Inherited)
+$checkSql = "
+    WITH Hierarchy AS (
+        SELECT Id, ParentId, OwnerId FROM Files WHERE Id = ? AND IsDeleted = 0
+        UNION ALL
+        SELECT f.Id, f.ParentId, f.OwnerId FROM Files f
+        INNER JOIN Hierarchy h ON f.Id = h.ParentId
+    )
+    SELECT (SELECT COUNT(*) FROM Hierarchy h2 
+            LEFT JOIN GenericShares gs ON h2.Id = gs.FileId
+            WHERE h2.OwnerId = ? OR gs.SharedWithUserId = ?) as hasAccess
+";
+$checkStmt = sqlsrv_query($conn, $checkSql, array($id, $ownerId, $ownerId));
 
-if($checkStmt === false || sqlsrv_has_rows($checkStmt) === false) {
+if($checkStmt === false || ($accessRow = sqlsrv_fetch_array($checkStmt, SQLSRV_FETCH_ASSOC)) === null || $accessRow['hasAccess'] == 0) {
     http_response_code(403);
     die(json_encode(array("message" => "Permission denied or file not found.")));
 }
@@ -34,9 +44,9 @@ $parentStmt = sqlsrv_query($conn, $parentSql, array($id));
 $currentFile = sqlsrv_fetch_array($parentStmt, SQLSRV_FETCH_ASSOC);
 $parentId = $currentFile['ParentId'];
 
-// Check for duplicate name
-$dupSql = "SELECT Id FROM Files WHERE FileName = ? AND OwnerId = ? " . ($parentId ? "AND ParentId = ?" : "AND ParentId IS NULL") . " AND Id != ?";
-$params = $parentId ? array($newName, $ownerId, $parentId, $id) : array($newName, $ownerId, $id);
+// Check for duplicate name (Regardless of Owner)
+$dupSql = "SELECT Id FROM Files WHERE FileName = ? AND " . ($parentId ? "ParentId = ?" : "ParentId IS NULL AND OwnerId = ?") . " AND Id != ? AND IsDeleted = 0";
+$params = $parentId ? array($newName, $parentId, $id) : array($newName, $ownerId, $id);
 $dupStmt = sqlsrv_query($conn, $dupSql, $params);
 
 if($dupStmt !== false && sqlsrv_has_rows($dupStmt) === true) {

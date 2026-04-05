@@ -113,14 +113,25 @@ if(isset($_GET['userId'])) {
             $params = array($userId, $userId, $offset, $limit);
         }
     } else {
-        // Checking Access to the Parent Folder
-        $accessSql = "SELECT COUNT(*) as cnt FROM Files f
-                      LEFT JOIN GenericShares gs ON f.Id = gs.FileId
-                      WHERE f.Id = ? AND (f.OwnerId = ? OR gs.SharedWithUserId = ?)";
+        // Checking Access to the Parent Folder (Owner or Inherited Share)
+        $accessSql = "
+            WITH Hierarchy AS (
+                SELECT Id, ParentId, OwnerId FROM Files WHERE Id = ? AND IsDeleted = 0
+                UNION ALL
+                SELECT f.Id, f.ParentId, f.OwnerId FROM Files f
+                INNER JOIN Hierarchy h ON f.Id = h.ParentId
+            )
+            SELECT COUNT(*) as cnt 
+            FROM Hierarchy h
+            LEFT JOIN GenericShares gs ON h.Id = gs.FileId
+            WHERE h.OwnerId = ? OR gs.SharedWithUserId = ?
+        ";
         $accessStmt = sqlsrv_query($conn, $accessSql, array($parentId, $userId, $userId));
         $hasAccess = false;
-        if ($accessStmt && sqlsrv_fetch_array($accessStmt)['cnt'] > 0) {
-            $hasAccess = true;
+        if ($accessStmt && $accessRow = sqlsrv_fetch_array($accessStmt, SQLSRV_FETCH_ASSOC)) {
+            if ($accessRow['cnt'] > 0) {
+                $hasAccess = true;
+            }
         }
 
         if (!$hasAccess) {

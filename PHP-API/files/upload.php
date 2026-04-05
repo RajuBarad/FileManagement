@@ -26,10 +26,35 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $name = $data['name'];
         $parentId = isset($data['parentId']) ? $data['parentId'] : null;
         $ownerId = $data['ownerId'];
+
+        // Access Check (Inherited Share or Owner)
+        if ($parentId !== null) {
+            $accessSql = "
+                WITH Hierarchy AS (
+                    SELECT Id, ParentId, OwnerId FROM Files WHERE Id = ?
+                    UNION ALL
+                    SELECT f.Id, f.ParentId, f.OwnerId FROM Files f
+                    INNER JOIN Hierarchy h ON f.Id = h.ParentId
+                )
+                SELECT COUNT(*) as cnt FROM Hierarchy h
+                LEFT JOIN GenericShares gs ON h.Id = gs.FileId
+                WHERE h.OwnerId = ? OR gs.SharedWithUserId = ?
+            ";
+            $accessStmt = sqlsrv_query($conn, $accessSql, array($parentId, $ownerId, $ownerId));
+            $hasAccess = false;
+            if ($accessStmt && $accessRow = sqlsrv_fetch_array($accessStmt, SQLSRV_FETCH_ASSOC)) {
+                if ($accessRow['cnt'] > 0) $hasAccess = true;
+            }
+            if (!$hasAccess) {
+                http_response_code(403);
+                echo json_encode(array("message" => "No permission to create folder here."));
+                exit;
+            }
+        }
         
-        // Check for duplicate folder name
-        $checkSql = "SELECT Id FROM Files WHERE FileName = ? AND OwnerId = ? AND IsFolder = 1 AND " . ($parentId === null ? "ParentId IS NULL" : "ParentId = ?");
-        $checkParams = ($parentId === null) ? array($name, $ownerId) : array($name, $ownerId, $parentId);
+        // Check for duplicate folder name (Regardless of owner)
+        $checkSql = "SELECT Id FROM Files WHERE FileName = ? AND IsFolder = 1 AND " . ($parentId === null ? "ParentId IS NULL AND OwnerId = ?" : "ParentId = ?");
+        $checkParams = ($parentId === null) ? array($name, $ownerId) : array($name, $parentId);
         $checkStmt = sqlsrv_query($conn, $checkSql, $checkParams);
         
         if ($checkStmt && sqlsrv_has_rows($checkStmt)) {
@@ -58,6 +83,31 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $ownerId = $_POST['ownerId'];
         $parentId = isset($_POST['parentId']) && $_POST['parentId'] !== 'null' ? $_POST['parentId'] : null;
         $file = $_FILES['file'];
+
+        // Access Check (Inherited Share or Owner)
+        if ($parentId !== null) {
+            $accessSql = "
+                WITH Hierarchy AS (
+                    SELECT Id, ParentId, OwnerId FROM Files WHERE Id = ?
+                    UNION ALL
+                    SELECT f.Id, f.ParentId, f.OwnerId FROM Files f
+                    INNER JOIN Hierarchy h ON f.Id = h.ParentId
+                )
+                SELECT COUNT(*) as cnt FROM Hierarchy h
+                LEFT JOIN GenericShares gs ON h.Id = gs.FileId
+                WHERE h.OwnerId = ? OR gs.SharedWithUserId = ?
+            ";
+            $accessStmt = sqlsrv_query($conn, $accessSql, array($parentId, $ownerId, $ownerId));
+            $hasAccess = false;
+            if ($accessStmt && $accessRow = sqlsrv_fetch_array($accessStmt, SQLSRV_FETCH_ASSOC)) {
+                if ($accessRow['cnt'] > 0) $hasAccess = true;
+            }
+            if (!$hasAccess) {
+                http_response_code(403);
+                echo json_encode(array("message" => "No permission to upload to this folder."));
+                exit;
+            }
+        }
         
         file_put_contents("../php_upload_debug.log", date('Y-m-d H:i:s') . " - Upload Request for user " . $ownerId . "\n", FILE_APPEND);
         file_put_contents("../php_upload_debug.log", "POST Data: " . print_r($_POST, true) . "\n", FILE_APPEND);
@@ -143,9 +193,9 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                     foreach ($folders as $folderName) {
                         if (empty($folderName) || $folderName == ".") continue;
 
-                        // Check if this folder exists under current parent
-                        $checkSql = "SELECT Id FROM Files WHERE FileName = ? AND ParentId " . ($finalParentId ? "= ?" : "IS NULL") . " AND IsFolder = 1 AND OwnerId = ?";
-                        $checkParams = $finalParentId ? array($folderName, $finalParentId, $ownerId) : array($folderName, $ownerId);
+                        // Check if this folder exists under current parent (Regardless of Owner)
+                        $checkSql = "SELECT Id FROM Files WHERE FileName = ? AND ParentId " . ($finalParentId ? "= ?" : "IS NULL AND OwnerId = ?") . " AND IsFolder = 1";
+                        $checkParams = ($finalParentId === null) ? array($folderName, $ownerId) : array($folderName, $finalParentId);
                         
                         $checkStmt = sqlsrv_query($conn, $checkSql, $checkParams);
                         
