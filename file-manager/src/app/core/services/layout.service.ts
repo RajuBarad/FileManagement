@@ -5,6 +5,7 @@ import { Injectable, signal } from '@angular/core';
 })
 export class LayoutService {
     isMobileSidebarOpen = signal(false);
+    isChatOpen = signal(false);
 
     toggleSidebar() {
         this.isMobileSidebarOpen.update(v => !v);
@@ -12,5 +13,13 @@ export class LayoutService {
 
     closeSidebar() {
         this.isMobileSidebarOpen.set(false);
+    }
+
+    toggleChat() {
+        this.isChatOpen.update(v => !v);
+    }
+
+    closeChat() {
+        this.isChatOpen.set(false);
     }
 }

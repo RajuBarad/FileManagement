@@ -5,9 +5,11 @@ import { UploadProgressComponent } from './components/upload-progress/upload-pro
 import { NotificationService } from './core/services/notification.service';
 import { FilePreviewModalComponent } from './components/modal/file-preview-modal.component';
 
+import { ChatComponent } from './components/chat/chat.component';
+
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastContainerComponent, UploadProgressComponent, FilePreviewModalComponent],
+  imports: [RouterOutlet, ToastContainerComponent, UploadProgressComponent, FilePreviewModalComponent, ChatComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
