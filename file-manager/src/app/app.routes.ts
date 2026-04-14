@@ -55,6 +55,42 @@ export const routes: Routes = [
             {
                 path: 'shared',
                 loadComponent: () => import('./features/file-manager/file-manager.component').then(m => m.FileManagerComponent)
+            },
+            {
+                path: 'masters/country',
+                loadComponent: () => import('./features/masters/country/country-list.component').then(m => m.CountryListComponent)
+            },
+            {
+                path: 'masters/state',
+                loadComponent: () => import('./features/masters/state/state-list.component').then(m => m.StateListComponent)
+            },
+            {
+                path: 'masters/district',
+                loadComponent: () => import('./features/masters/district/district-list.component').then(m => m.DistrictListComponent)
+            },
+            {
+                path: 'masters/taluka',
+                loadComponent: () => import('./features/masters/taluka/taluka-list.component').then(m => m.TalukaListComponent)
+            },
+            {
+                path: 'masters/village',
+                loadComponent: () => import('./features/masters/village/village-list.component').then(m => m.VillageListComponent)
+            },
+            {
+                path: 'masters/channel',
+                loadComponent: () => import('./features/masters/channel/channel-list.component').then(m => m.ChannelListComponent)
+            },
+            {
+                path: 'masters/scope-of-work',
+                loadComponent: () => import('./features/masters/scope-of-work/scope-of-work-list.component').then(m => m.ScopeOfWorkListComponent)
+            },
+            {
+                path: 'masters/client',
+                loadComponent: () => import('./features/masters/client/client-list.component').then(m => m.ClientListComponent)
+            },
+            {
+                path: 'masters/application',
+                loadComponent: () => import('./features/masters/application/application-list.component').then(m => m.ApplicationListComponent)
             }
         ]
     },
