@@ -131,7 +131,7 @@ export class FileSystemService {
         );
     }
 
-    uploadFile(parentId: string | null, file: File, existingFileId?: string, relativePath?: string): Observable<HttpEvent<any>> {
+    uploadFile(parentId: string | null, file: File, existingFileId?: string, relativePath?: string, skipRefresh: boolean = false): Observable<HttpEvent<any>> {
         const currentUser = this.authService.currentUser();
         if (!currentUser) return throwError(() => new Error('Not logged in'));
 
@@ -154,9 +154,9 @@ export class FileSystemService {
             observe: 'events'
         }).pipe(
             tap(event => {
-                if (event.type === 4) { // HttpResponse
+                if (event.type === 4 && !skipRefresh) { // HttpResponse
                     // Refresh current folder to get the newly uploaded file
-                    this.getItems(this.currentFolderId()).subscribe();
+                    this.refreshCurrentFolder();
                 }
             }),
             catchError(err => {
@@ -540,7 +540,11 @@ export class FileSystemService {
     }
 
     refreshCurrentFolder() {
-        this.getItems(this.currentFolderId()).subscribe();
+        this.getItems(this.currentFolderId()).subscribe(items => {
+            this.zone.run(() => {
+                this.files.set(items);
+            });
+        });
     }
 
     getVersions(fileId: string): Observable<any[]> {

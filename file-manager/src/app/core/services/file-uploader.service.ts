@@ -32,15 +32,17 @@ export class FileUploaderService {
 
     handleFileInput(files: File[]) {
         if (files.length === 0) return;
-        const file = files[0];
-        const currentFiles = this.fileService.files();
-        const duplicate = currentFiles.find(f => f.name === file.name && f.type !== 'folder');
+        
+        files.forEach(file => {
+            const currentFiles = this.fileService.files();
+            const duplicate = currentFiles.find(f => f.name === file.name && f.type !== 'folder');
 
-        if (duplicate) {
-            this.promptDuplicateFile(file, duplicate.id);
-        } else {
-            this.uploadFile(file);
-        }
+            if (duplicate) {
+                this.promptDuplicateFile(file, duplicate.id);
+            } else {
+                this.uploadFile(file);
+            }
+        });
     }
 
     handleFolderInput(files: File[]) {
@@ -284,7 +286,7 @@ export class FileUploaderService {
                 } else {
                     if (uploadedCount > 0) {
                         this.uploadService.completeUpload(uploadId);
-                        this.toast.show('Folder uploaded with some errors', 'warning');
+                        this.toast.show(`Folder uploaded with ${errors} errors`, 'warning');
                     } else {
                         this.uploadService.failUpload(uploadId);
                         this.toast.show('Folder upload failed', 'error');
@@ -294,6 +296,7 @@ export class FileUploaderService {
             }
 
             const file = files[index];
+            const fileUploadId = `${uploadId}-file-${index}`;
             const relPath = file.webkitRelativePath;
             const pathParts = relPath.split('/');
 
@@ -305,13 +308,41 @@ export class FileUploaderService {
             pathParts.pop();
             const directoryPath = pathParts.join('/');
 
-            this.fileService.uploadFile(this.fileService.currentFolderId(), file, undefined, directoryPath).subscribe({
+            // Add separate progress item for this specific file
+            this.uploadService.addUpload({
+                id: fileUploadId,
+                name: file.name,
+                progress: 0,
+                status: 'uploading',
+                type: 'file',
+                parentId: uploadId
+            });
+
+            this.fileService.uploadFile(this.fileService.currentFolderId(), file, undefined, directoryPath, true).subscribe({
                 next: (event) => {
-                    if (event.type === 4) { // HttpResponse
+                    if (event.type === 1) { // UploadProgress
+                        if (event.total) {
+                            const progress = Math.round(100 * event.loaded / event.total);
+                            this.uploadService.updateProgress(fileUploadId, progress);
+                        }
+                    } else if (event.type === 4) { // HttpResponse
                         uploadedCount++;
                         const progress = (uploadedCount / totalFiles) * 100;
-                        this.uploadService.updateProgress(uploadId, progress, `${uploadedCount}/${totalFiles}`);
-                        uploadNext(index + 1);
+                        const totalInfo = `${uploadedCount}/${totalFiles}` + (errors > 0 ? ` (${errors} errors)` : '');
+                        
+                        // Update folder progress FIRST
+                        this.uploadService.updateProgress(uploadId, progress, totalInfo);
+                        
+                        // Then complete the file item
+                        this.uploadService.completeUpload(fileUploadId);
+                        
+                        if (uploadedCount === totalFiles) {
+                            this.fileService.refreshCurrentFolder();
+                        }
+
+                        setTimeout(() => {
+                            uploadNext(index + 1);
+                        }, 100);
                     }
                 },
                 error: (err) => {
@@ -319,8 +350,21 @@ export class FileUploaderService {
                     errors++;
                     uploadedCount++;
                     const progress = (uploadedCount / totalFiles) * 100;
-                    this.uploadService.updateProgress(uploadId, progress, `${uploadedCount}/${totalFiles}`);
-                    uploadNext(index + 1);
+                    const totalInfo = `${uploadedCount}/${totalFiles} (${errors} errors)`;
+                    
+                    // Update folder progress FIRST
+                    this.uploadService.updateProgress(uploadId, progress, totalInfo);
+                    
+                    // Then fail the file item
+                    this.uploadService.failUpload(fileUploadId);
+                    
+                    if (uploadedCount === totalFiles) {
+                         this.fileService.refreshCurrentFolder();
+                    }
+
+                    setTimeout(() => {
+                        uploadNext(index + 1);
+                    }, 100);
                 }
             });
         };

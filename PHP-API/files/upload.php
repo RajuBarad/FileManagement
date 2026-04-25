@@ -53,7 +53,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
         
         // Check for duplicate folder name (Regardless of owner)
-        $checkSql = "SELECT Id FROM Files WHERE FileName = ? AND IsFolder = 1 AND " . ($parentId === null ? "ParentId IS NULL AND OwnerId = ?" : "ParentId = ?");
+        $checkSql = "SELECT Id FROM Files WHERE FileName = ? AND IsFolder = 1 AND IsDeleted = 0 AND " . ($parentId === null ? "ParentId IS NULL AND OwnerId = ?" : "ParentId = ?");
         $checkParams = ($parentId === null) ? array($name, $ownerId) : array($name, $parentId);
         $checkStmt = sqlsrv_query($conn, $checkSql, $checkParams);
         
@@ -194,7 +194,7 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                         if (empty($folderName) || $folderName == ".") continue;
 
                         // Check if this folder exists under current parent (Regardless of Owner)
-                        $checkSql = "SELECT Id FROM Files WHERE FileName = ? AND ParentId " . ($finalParentId ? "= ?" : "IS NULL AND OwnerId = ?") . " AND IsFolder = 1";
+                        $checkSql = "SELECT Id FROM Files WHERE FileName = ? AND ParentId " . ($finalParentId ? "= ?" : "IS NULL AND OwnerId = ?") . " AND IsFolder = 1 AND IsDeleted = 0";
                         $checkParams = ($finalParentId === null) ? array($folderName, $ownerId) : array($folderName, $finalParentId);
                         
                         $checkStmt = sqlsrv_query($conn, $checkSql, $checkParams);

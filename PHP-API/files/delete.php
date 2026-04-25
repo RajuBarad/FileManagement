@@ -50,16 +50,26 @@ if($stmt1 === false) {
     die(json_encode(array("error" => sqlsrv_errors())));
 }
 
-// 2. Soft Delete file/folder
-// Mark as deleted instead of removing from DB
-$deleteFileSql = "UPDATE Files SET IsDeleted = 1, DeletedAt = GETDATE(), DeletedByUserId = ? WHERE Id = ?";
-$stmt2 = sqlsrv_query($conn, $deleteFileSql, array($userId, $id));
+// 2. Recursive Soft Delete file/folder and all its contents
+$deleteFileSql = "
+    WITH Descendants AS (
+        SELECT Id FROM Files WHERE Id = ?
+        UNION ALL
+        SELECT f.Id FROM Files f
+        INNER JOIN Descendants d ON f.ParentId = d.Id
+    )
+    UPDATE Files 
+    SET IsDeleted = 1, 
+        DeletedAt = GETDATE(), 
+        DeletedByUserId = ? 
+    WHERE Id IN (SELECT Id FROM Descendants)
+";
+$stmt2 = sqlsrv_query($conn, $deleteFileSql, array($id, $ownerId));
 
 if($stmt2 === false) {
     sqlsrv_rollback($conn);
-    // Likely constraint violation if folder has children and no cascade
-    http_response_code(409); 
-    die(json_encode(array("message" => "Could not delete. If this is a folder, ensure it is empty.", "error" => sqlsrv_errors())));
+    http_response_code(500); 
+    die(json_encode(array("message" => "Could not delete items.", "error" => sqlsrv_errors())));
 }
 
 sqlsrv_commit($conn);
