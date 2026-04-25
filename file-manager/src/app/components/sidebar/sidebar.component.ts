@@ -90,6 +90,56 @@ import { LayoutService } from '../../core/services/layout.service';
           <lucide-icon name="check-square" class="h-5 w-5"></lucide-icon>
           Tasks
         </a>
+
+        <!-- Masters Menu -->
+        <div class="space-y-1">
+          <button (click)="toggleMasters()" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+            <div class="flex items-center gap-3">
+              <lucide-icon name="layout-grid" class="h-5 w-5"></lucide-icon>
+              <span>Masters</span>
+            </div>
+             <lucide-icon [name]="showMasters() ? 'chevron-up' : 'chevron-down'" class="h-4 w-4 text-gray-400"></lucide-icon>
+          </button>
+          
+          <div *ngIf="showMasters()" class="pl-12 space-y-1">
+            <a routerLink="/masters/country" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Country Master
+            </a>
+            <a routerLink="/masters/state" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              State Master
+            </a>
+            <a routerLink="/masters/district" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              District Master
+            </a>
+            <a routerLink="/masters/taluka" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Taluka Master
+            </a>
+            <a routerLink="/masters/village" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Village Master
+            </a>
+            <a routerLink="/masters/channel" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Channel Master
+            </a>
+            <a routerLink="/masters/scope-of-work" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Scope of Work Master
+            </a>
+            <a routerLink="/masters/client" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Client Master
+            </a>
+            <a routerLink="/masters/application" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Task Master
+            </a>
+          </div>
+        </div>
       </nav>
       
       <!-- Storage widget removed -->
@@ -127,9 +177,14 @@ export class SidebarComponent {
 
   @ViewChild('folderModal') folderModal!: ModalComponent;
   showNewMenu = signal(false);
+  showMasters = signal(false);
 
   toggleNewMenu() {
     this.showNewMenu.update(v => !v);
+  }
+
+  toggleMasters() {
+    this.showMasters.update(v => !v);
   }
 
   openNewFolderModal() {
