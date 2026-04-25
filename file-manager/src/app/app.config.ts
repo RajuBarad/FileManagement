@@ -1,5 +1,5 @@
 import { ApplicationConfig, importProvidersFrom, isDevMode, provideZonelessChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withHashLocation } from '@angular/router';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 
 import { routes } from './app.routes';
@@ -9,7 +9,7 @@ import { provideServiceWorker } from '@angular/service-worker';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideZonelessChangeDetection(),
-    provideRouter(routes),
+    provideRouter(routes, withHashLocation()),
     provideHttpClient(withFetch()),
     importProvidersFrom(LucideAngularModule.pick({
       HardDrive, Clock, Star, Trash2, Cloud, Plus,
