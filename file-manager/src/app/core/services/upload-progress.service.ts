@@ -8,6 +8,9 @@ export interface UploadItem {
     status: 'uploading' | 'completed' | 'error';
     type: 'file' | 'folder';
     totalInfo?: string; // e.g., "1/10 files" for folders
+    errorCount?: number;
+    errorMessage?: string;
+    parentId?: string; // ID of the folder this item belongs to
 }
 
 @Injectable({
@@ -22,7 +25,26 @@ export class UploadProgressService {
     cancel$ = this.cancelSource.asObservable();
 
     addUpload(item: UploadItem) {
-        this.uploads.update(current => [item, ...current]);
+        this.uploads.update(current => {
+            if (item.parentId) {
+                const parentIndex = current.findIndex(u => u.id === item.parentId);
+                if (parentIndex !== -1) {
+                    const next = [...current];
+                    // Insert after parent (and after any other children already there)
+                    let lastChildIndex = parentIndex;
+                    for (let i = parentIndex + 1; i < next.length; i++) {
+                        if (next[i].parentId === item.parentId) {
+                            lastChildIndex = i;
+                        } else {
+                            break;
+                        }
+                    }
+                    next.splice(lastChildIndex + 1, 0, item);
+                    return next;
+                }
+            }
+            return [item, ...current];
+        });
         this.isMinimized.set(false); // Auto open on new upload
     }
 

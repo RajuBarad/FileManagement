@@ -103,7 +103,7 @@ if(isset($_GET['userId'])) {
                            f.IsLocked, f.LockedByUserId, f.LockedOn, lu.Username as LockedByUserName,
                            CASE WHEN sf.Id IS NOT NULL THEN 1 ELSE 0 END as IsStarred, f.IsDeleted, f.DeletedAt, f.LastModified
                     FROM Files f 
-                    JOIN Users u ON f.OwnerId = u.Id
+                    INNER JOIN Users u ON f.OwnerId = u.Id
                     LEFT JOIN Users lu ON f.LockedByUserId = lu.Id
                     LEFT JOIN StarredFiles sf ON f.Id = sf.FileId AND sf.UserId = ?
                     WHERE f.OwnerId = ? AND f.ParentId IS NULL AND f.IsDeleted = 0
@@ -174,7 +174,7 @@ if(isset($_GET['userId'])) {
             'ownerName' => $row['OwnerName'],
             'parentId' => $row['ParentId'],
             'accessType' => $row['AccessType'],
-            'url' => (isset($_SERVER['HTTPS']) ? "http" : "http") . "://$_SERVER[HTTP_HOST]/files/download.php?id=" . $row['Id'], 
+            'url' => (isset($_SERVER['HTTPS']) ? "https" : "http") . "://$_SERVER[HTTP_HOST]/files/download.php?id=" . $row['Id'], 
             'isStarred' => isset($row['IsStarred']) ? (bool)$row['IsStarred'] : false,
             'isShared' => isset($row['IsShared']) ? (bool)$row['IsShared'] : false,
             'isLocked' => (bool)$row['IsLocked'],
