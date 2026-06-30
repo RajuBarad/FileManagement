@@ -229,7 +229,7 @@ export class AdminDashboardComponent implements OnInit {
       });
     } else {
       // Create
-      const start = { ...this.newUser, id: crypto.randomUUID() } as User;
+      const start = { ...this.newUser } as Omit<User, 'id'>;
       this.auth.register(start).subscribe({
         next: () => {
           this.toast.show('User created successfully', 'success');

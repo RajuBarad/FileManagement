@@ -60,7 +60,7 @@ export class AuthService {
         );
     }
 
-    register(user: User): Observable<boolean> {
+    register(user: Omit<User, 'id'>): Observable<boolean> {
         // user object has name, email, password, role
         return this.http.post<any>(`${this.API_BASE}/register.php`, {
             name: user.name,

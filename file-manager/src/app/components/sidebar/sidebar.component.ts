@@ -92,7 +92,7 @@ import { LayoutService } from '../../core/services/layout.service';
         </a>
 
         <!-- Masters Menu -->
-        <div class="space-y-1">
+        <!-- <div class="space-y-1">
           <button (click)="toggleMasters()" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
             <div class="flex items-center gap-3">
               <lucide-icon name="layout-grid" class="h-5 w-5"></lucide-icon>
@@ -139,7 +139,7 @@ import { LayoutService } from '../../core/services/layout.service';
               Task Master
             </a>
           </div>
-        </div>
+        </div>-->
       </nav>
       
       <!-- Storage widget removed -->
