@@ -11,9 +11,16 @@ $data = json_decode(file_get_contents("php://input"));
 
 if(!empty($data->id) && !empty($data->name)) {
     $reminderDays = isset($data->reminderDays) ? intval($data->reminderDays) : 0;
+    $isDefault = isset($data->isDefault) ? ($data->isDefault ? 1 : 0) : 0;
+    $sequence = isset($data->sequence) ? intval($data->sequence) : 0;
     
-    $sql = "UPDATE Channels SET Name = ?, ReminderDays = ? WHERE Id = ?";
-    $params = array($data->name, $reminderDays, $data->id);
+    if ($isDefault === 1) {
+        $sqlUnset = "UPDATE Channels SET IsDefault = 0";
+        sqlsrv_query($conn, $sqlUnset);
+    }
+    
+    $sql = "UPDATE Channels SET Name = ?, ReminderDays = ?, IsDefault = ?, Sequence = ? WHERE Id = ?";
+    $params = array($data->name, $reminderDays, $isDefault, $sequence, $data->id);
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if($stmt) {

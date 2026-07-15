@@ -102,13 +102,32 @@ import { LayoutService } from '../../core/services/layout.service';
                    @if (notificationService.notifications().length === 0) {
                        <div class="p-4 text-center text-sm text-gray-500">No new notifications</div>
                    } @else {
-                       @for (n of notificationService.notifications(); track n.id) {
-                           <div (click)="handleNotificationClick(n)" class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-50 dark:border-gray-700 last:border-0">
-                               <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ getNotificationTitle(n) }}</p>
-                               <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{{ n.message }}</p>
-                               <p class="text-[10px] text-gray-400 mt-1">{{ n.createdAt | date:'short' }}</p>
-                           </div>
-                       }
+                        @for (n of notificationService.notifications(); track n.id) {
+                            <div (click)="handleNotificationClick(n)" 
+                                 [class.border-l-4]="n.type === 'TaskReminderToday'"
+                                 [class.border-l-red-500]="n.type === 'TaskReminderToday'"
+                                 class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-50 dark:border-gray-700 last:border-0 flex gap-2">
+                                
+                                <div *ngIf="n.type === 'TaskReminderToday'" class="flex items-center text-red-500 shrink-0">
+                                    <lucide-icon name="alert-triangle" class="h-4 w-4"></lucide-icon>
+                                </div>
+                                <div *ngIf="n.type === 'TaskReminderTomorrow'" class="flex items-center text-yellow-500 shrink-0">
+                                    <lucide-icon name="alert-circle" class="h-4 w-4"></lucide-icon>
+                                </div>
+
+                                <div class="flex-1">
+                                    <p class="text-sm font-semibold text-gray-800 dark:text-gray-200"
+                                       [class.text-red-600]="n.type === 'TaskReminderToday'"
+                                       [class.dark:text-red-400]="n.type === 'TaskReminderToday'"
+                                       [class.text-yellow-600]="n.type === 'TaskReminderTomorrow'"
+                                       [class.dark:text-yellow-400]="n.type === 'TaskReminderTomorrow'">
+                                        {{ getNotificationTitle(n) }}
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">{{ n.message }}</p>
+                                    <p class="text-[10px] text-gray-400 mt-1">{{ n.createdAt | date:'short' }}</p>
+                                </div>
+                            </div>
+                        }
                    }
                 </div>
              </div>
@@ -230,6 +249,8 @@ export class HeaderComponent implements OnInit {
       case 'TaskAssignment': return 'New Task';
       case 'FolderShare': return 'Folder Shared';
       case 'FileShare': return 'File Shared';
+      case 'TaskReminderTomorrow': return 'Task Due Tomorrow';
+      case 'TaskReminderToday': return 'Task Due TODAY';
       default: return 'Notification';
     }
   }
@@ -250,6 +271,8 @@ export class HeaderComponent implements OnInit {
       }
     } else if (n.type === 'TaskAssignment' && n.referenceId) {
       this.router.navigate(['/tasks'], { queryParams: { openTaskId: n.referenceId, t: new Date().getTime() } });
+    } else if ((n.type === 'TaskReminderTomorrow' || n.type === 'TaskReminderToday') && n.referenceId) {
+      this.router.navigate(['/masters/application'], { queryParams: { openTaskId: n.referenceId, t: new Date().getTime() } });
     } else if (n.type === 'FolderShare' && n.referenceId) {
       this.router.navigate(['/files', n.referenceId]);
     } else if (n.type === 'FileShare') {

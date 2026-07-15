@@ -12,5 +12,13 @@ export interface Application {
     countryName?: string;
     description: string;
     reference: string;
+    channelId?: number | null;
+    channelName?: string;
+    followupId?: number | null;
+    followupName?: string;
+    isCompleted?: boolean;
+    isClosed?: boolean;
+    assignees?: { id: number; name: string }[];
+    assignedToUserIds?: number[];
     createdAt?: Date;
 }

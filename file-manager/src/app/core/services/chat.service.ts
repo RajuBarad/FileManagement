@@ -5,6 +5,7 @@ import { Peer, DataConnection } from 'peerjs';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { User } from '../models/user.model';
 import { ToastService } from './toast.service';
+import { environment } from '../../../environments/environment';
 
 export interface ChatMessage {
   from: string;
@@ -58,7 +59,7 @@ export class ChatService implements OnDestroy {
   private lastSenderName = '';
 
   constructor() {
-    this.originalTitle = this.titleService.getTitle() || 'BVA Drive';
+    this.originalTitle = this.titleService.getTitle() || environment.projectTitle || 'BVA Drive';
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {

@@ -10,7 +10,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 export interface Notification {
     id: number | string;
     message: string;
-    type: 'Info' | 'UnlockAlert' | 'Share' | 'FileShare' | 'FolderShare' | 'PendingUnlockRequest' | 'TaskAssignment';
+    type: 'Info' | 'UnlockAlert' | 'Share' | 'FileShare' | 'FolderShare' | 'PendingUnlockRequest' | 'TaskAssignment' | 'TaskReminderTomorrow' | 'TaskReminderToday';
     relatedId: string | null;
     createdAt: any;
     isRead?: boolean;

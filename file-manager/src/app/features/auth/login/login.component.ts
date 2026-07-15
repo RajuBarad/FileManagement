@@ -5,6 +5,7 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { LucideAngularModule } from 'lucide-angular';
 import { Router } from '@angular/router';
+import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-login',
@@ -26,7 +27,7 @@ import { Router } from '@angular/router';
             <div class="h-16 w-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-white mb-4 shadow-inner border border-white/30">
               <lucide-icon name="cloud" class="h-8 w-8"></lucide-icon>
             </div>
-            <h2 class="text-3xl font-bold text-white tracking-tight">BVA Drive Login</h2>
+            <h2 class="text-3xl font-bold text-white tracking-tight">{{ projectTitle }} Login</h2>
             <p class="text-blue-100 mt-2 font-light">Secure Access to Your Cloud</p>
           </div>
 
@@ -98,6 +99,7 @@ export class LoginComponent {
   email = '';
   password = '';
   isLoading = signal(false);
+  projectTitle = environment.projectTitle || 'BVA Drive';
 
 
   onSubmit() {

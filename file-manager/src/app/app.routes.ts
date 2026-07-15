@@ -53,6 +53,10 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/tasks/task-dashboard.component').then(m => m.TaskDashboardComponent)
             },
             {
+                path: 'followups',
+                loadComponent: () => import('./features/followup-dashboard/followup-dashboard.component').then(m => m.FollowupDashboardComponent)
+            },
+            {
                 path: 'shared',
                 loadComponent: () => import('./features/file-manager/file-manager.component').then(m => m.FileManagerComponent)
             },
@@ -79,6 +83,10 @@ export const routes: Routes = [
             {
                 path: 'masters/channel',
                 loadComponent: () => import('./features/masters/channel/channel-list.component').then(m => m.ChannelListComponent)
+            },
+            {
+                path: 'masters/followup',
+                loadComponent: () => import('./features/masters/followup/followup-list.component').then(m => m.FollowupListComponent)
             },
             {
                 path: 'masters/scope-of-work',

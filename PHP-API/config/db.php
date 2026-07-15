@@ -26,4 +26,12 @@ if ($conn === false) {
     echo json_encode(array("error" => sqlsrv_errors()));
     die(print_r(sqlsrv_errors(), true));
 }
+
+// Dynamically detect server host and protocol
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)) ? "https://" : "http://";
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost:888';
+$apiBaseUrl = $protocol . $host;
+if (!defined('API_BASE_URL')) {
+    define('API_BASE_URL', $apiBaseUrl);
+}
 ?>

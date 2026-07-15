@@ -11,9 +11,16 @@ $data = json_decode(file_get_contents("php://input"));
 
 if(!empty($data->name)) {
     $reminderDays = isset($data->reminderDays) ? intval($data->reminderDays) : 0;
+    $isDefault = isset($data->isDefault) ? ($data->isDefault ? 1 : 0) : 0;
+    $sequence = isset($data->sequence) ? intval($data->sequence) : 0;
     
-    $sql = "INSERT INTO Channels (Name, ReminderDays) OUTPUT INSERTED.Id VALUES (?, ?)";
-    $params = array($data->name, $reminderDays);
+    if ($isDefault === 1) {
+        $sqlUnset = "UPDATE Channels SET IsDefault = 0";
+        sqlsrv_query($conn, $sqlUnset);
+    }
+    
+    $sql = "INSERT INTO Channels (Name, ReminderDays, IsDefault, Sequence) OUTPUT INSERTED.Id VALUES (?, ?, ?, ?)";
+    $params = array($data->name, $reminderDays, $isDefault, $sequence);
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if($stmt) {

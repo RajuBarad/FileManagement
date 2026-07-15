@@ -6,6 +6,7 @@ import Swal from 'sweetalert2';
 import { FileSystemService } from '../../core/services/file-system.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ModalComponent } from '../modal/modal.component';
+import { environment } from '../../../environments/environment';
 
 import { IconsModule } from '../../core/modules/icons.module';
 import { FileUploaderService } from '../../core/services/file-uploader.service';
@@ -23,7 +24,7 @@ import { LayoutService } from '../../core/services/layout.service';
       <div class="h-16 flex items-center px-6 shrink-0">
         <div class="flex items-center gap-2">
            <lucide-icon name="cloud" class="h-8 w-8 text-blue-600"></lucide-icon>
-          <span class="text-xl font-bold text-gray-800 dark:text-white">BVA Drive</span>
+          <span class="text-xl font-bold text-gray-800 dark:text-white">{{ projectTitle }}</span>
         </div>
       </div>
 
@@ -90,9 +91,14 @@ import { LayoutService } from '../../core/services/layout.service';
           <lucide-icon name="check-square" class="h-5 w-5"></lucide-icon>
           Tasks
         </a>
+        <a routerLink="/followups" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
+           class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+          <lucide-icon name="rotate-ccw" class="h-5 w-5"></lucide-icon>
+          Followups
+        </a>
 
         <!-- Masters Menu -->
-        <!-- <div class="space-y-1">
+        <div class="space-y-1">
           <button (click)="toggleMasters()" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
             <div class="flex items-center gap-3">
               <lucide-icon name="layout-grid" class="h-5 w-5"></lucide-icon>
@@ -126,6 +132,10 @@ import { LayoutService } from '../../core/services/layout.service';
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Channel Master
             </a>
+            <a routerLink="/masters/followup" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Followup Master
+            </a>
             <a routerLink="/masters/scope-of-work" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Scope of Work Master
@@ -139,7 +149,7 @@ import { LayoutService } from '../../core/services/layout.service';
               Task Master
             </a>
           </div>
-        </div>-->
+        </div>
       </nav>
       
       <!-- Storage widget removed -->
@@ -178,6 +188,7 @@ export class SidebarComponent {
   @ViewChild('folderModal') folderModal!: ModalComponent;
   showNewMenu = signal(false);
   showMasters = signal(false);
+  projectTitle = environment.projectTitle || 'BVA Drive';
 
   toggleNewMenu() {
     this.showNewMenu.update(v => !v);

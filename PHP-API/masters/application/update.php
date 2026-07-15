@@ -10,12 +10,25 @@ include_once '../../config/db.php';
 $data = json_decode(file_get_contents("php://input"));
 
 if(!empty($data->id) && !empty($data->visitingDate) && !empty($data->visitorName) && !empty($data->villageId)) {
-    $sql = "UPDATE Applications SET VisitingDate = ?, VisitorName = ?, MobileNo = ?, VillageId = ?, Description = ?, Reference = ? 
+    $channelId = isset($data->channelId) && !empty($data->channelId) ? intval($data->channelId) : null;
+    $followupId = isset($data->followupId) && !empty($data->followupId) ? intval($data->followupId) : null;
+    $sql = "UPDATE Applications SET VisitingDate = ?, VisitorName = ?, MobileNo = ?, VillageId = ?, Description = ?, Reference = ?, ChannelId = ?, FollowupId = ? 
             WHERE Id = ?";
-    $params = array($data->visitingDate, $data->visitorName, $data->mobileNo, $data->villageId, $data->description, $data->reference, $data->id);
+    $params = array($data->visitingDate, $data->visitorName, $data->mobileNo, $data->villageId, $data->description, $data->reference, $channelId, $followupId, $data->id);
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if($stmt) {
+        $delSql = "DELETE FROM ApplicationAssignments WHERE ApplicationId = ?";
+        sqlsrv_query($conn, $delSql, array($data->id));
+        
+        $assignedToUserIds = isset($data->assignedToUserIds) ? $data->assignedToUserIds : array();
+        if (is_array($assignedToUserIds)) {
+            foreach($assignedToUserIds as $userId) {
+                $assignSql = "INSERT INTO ApplicationAssignments (ApplicationId, UserId) VALUES (?, ?)";
+                sqlsrv_query($conn, $assignSql, array($data->id, intval($userId)));
+            }
+        }
+        
         http_response_code(200);
         echo json_encode(array("message" => "Application was updated."));
     } else {

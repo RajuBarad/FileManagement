@@ -4,10 +4,65 @@ include_once '../config/db.php';
 if(isset($_GET['userId'])) {
     $userId = $_GET['userId'];
 
+    // Dynamically generate Task Reminders for this user
+    // 1. Reminders for tasks due tomorrow (1 day before)
+    $remSql1 = "SELECT a.Id, a.VisitorName, a.VisitingDate
+                FROM Applications a
+                JOIN ApplicationAssignments aa ON a.Id = aa.ApplicationId
+                LEFT JOIN Followups f ON a.FollowupId = f.Id
+                WHERE aa.UserId = ? 
+                  AND (f.IsCompleted = 0 OR f.IsCompleted IS NULL)
+                  AND (a.IsClosed = 0 OR a.IsClosed IS NULL)
+                  AND DATEDIFF(day, GETDATE(), a.VisitingDate) = 1";
+    $remStmt1 = sqlsrv_query($conn, $remSql1, array($userId));
+    if($remStmt1 !== false) {
+        while($row = sqlsrv_fetch_array($remStmt1, SQLSRV_FETCH_ASSOC)) {
+            $appId = $row['Id'];
+            $visitorName = $row['VisitorName'];
+            // Check if notification already exists
+            $checkSql = "SELECT 1 FROM Notifications WHERE UserId = ? AND Type = 'TaskReminderTomorrow' AND ReferenceId = ?";
+            $checkStmt = sqlsrv_query($conn, $checkSql, array($userId, $appId));
+            if($checkStmt !== false && sqlsrv_has_rows($checkStmt) === false) {
+                // Create notification
+                $insSql = "INSERT INTO Notifications (UserId, Title, Message, Type, ReferenceId, IsRead, CreatedAt) 
+                           VALUES (?, ?, ?, 'TaskReminderTomorrow', ?, 0, GETDATE())";
+                $msg = "Task for visitor " . $visitorName . " is due tomorrow.";
+                sqlsrv_query($conn, $insSql, array($userId, "Task Due Tomorrow", $msg, $appId));
+            }
+        }
+    }
+
+    // 2. Reminders for tasks due today (0 days difference)
+    $remSql2 = "SELECT a.Id, a.VisitorName, a.VisitingDate
+                FROM Applications a
+                JOIN ApplicationAssignments aa ON a.Id = aa.ApplicationId
+                LEFT JOIN Followups f ON a.FollowupId = f.Id
+                WHERE aa.UserId = ? 
+                  AND (f.IsCompleted = 0 OR f.IsCompleted IS NULL)
+                  AND (a.IsClosed = 0 OR a.IsClosed IS NULL)
+                  AND DATEDIFF(day, GETDATE(), a.VisitingDate) = 0";
+    $remStmt2 = sqlsrv_query($conn, $remSql2, array($userId));
+    if($remStmt2 !== false) {
+        while($row = sqlsrv_fetch_array($remStmt2, SQLSRV_FETCH_ASSOC)) {
+            $appId = $row['Id'];
+            $visitorName = $row['VisitorName'];
+            // Check if notification already exists
+            $checkSql = "SELECT 1 FROM Notifications WHERE UserId = ? AND Type = 'TaskReminderToday' AND ReferenceId = ?";
+            $checkStmt = sqlsrv_query($conn, $checkSql, array($userId, $appId));
+            if($checkStmt !== false && sqlsrv_has_rows($checkStmt) === false) {
+                // Create notification
+                $insSql = "INSERT INTO Notifications (UserId, Title, Message, Type, ReferenceId, IsRead, CreatedAt) 
+                           VALUES (?, ?, ?, 'TaskReminderToday', ?, 0, GETDATE())";
+                $msg = "URGENT: Task for visitor " . $visitorName . " is due TODAY!";
+                sqlsrv_query($conn, $insSql, array($userId, "Task Due Today", $msg, $appId));
+            }
+        }
+    }
+
     $notifications = array();
 
     // 1. Get standard notifications
-    $sql = "SELECT CAST(Id AS INT) as Id, Message, Type, CAST(RelatedId AS NVARCHAR(36)) as RelatedId, CreatedAt 
+    $sql = "SELECT CAST(Id AS INT) as Id, Title, Message, Type, CAST(RelatedId AS NVARCHAR(36)) as RelatedId, ReferenceId, CreatedAt 
             FROM Notifications 
             WHERE UserId = ? AND IsRead = 0";
     
@@ -16,9 +71,11 @@ if(isset($_GET['userId'])) {
         while($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
             $notifications[] = array(
                 'id' => $row['Id'],
+                'title' => isset($row['Title']) ? $row['Title'] : '',
                 'message' => $row['Message'],
                 'type' => $row['Type'],
                 'relatedId' => $row['RelatedId'],
+                'referenceId' => isset($row['ReferenceId']) ? (int)$row['ReferenceId'] : null,
                 'createdAt' => $row['CreatedAt'],
                 'source' => 'notification'
             );

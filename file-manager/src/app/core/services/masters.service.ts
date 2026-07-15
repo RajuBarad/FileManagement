@@ -12,6 +12,7 @@ import { Channel } from '../models/channel.model';
 import { Application } from '../models/application.model';
 import { ScopeOfWork } from '../models/scope-of-work.model';
 import { Client } from '../models/client.model';
+import { Followup } from '../models/followup.model';
 
 @Injectable({
     providedIn: 'root'
@@ -35,11 +36,11 @@ export class MastersService {
     }
 
     updateCountry(country: Country): Observable<any> {
-        return this.http.put(`${this.API_BASE}/country/update.php`, country);
+        return this.http.post(`${this.API_BASE}/country/update.php`, country);
     }
 
     deleteCountry(id: number): Observable<any> {
-        return this.http.request('delete', `${this.API_BASE}/country/delete.php`, { body: { id } });
+        return this.http.post(`${this.API_BASE}/country/delete.php`, { id });
     }
 
     // State Methods
@@ -57,11 +58,11 @@ export class MastersService {
     }
 
     updateState(state: State): Observable<any> {
-        return this.http.put(`${this.API_BASE}/state/update.php`, state);
+        return this.http.post(`${this.API_BASE}/state/update.php`, state);
     }
 
     deleteState(id: number): Observable<any> {
-        return this.http.request('delete', `${this.API_BASE}/state/delete.php`, { body: { id } });
+        return this.http.post(`${this.API_BASE}/state/delete.php`, { id });
     }
 
     // District Methods
@@ -79,11 +80,11 @@ export class MastersService {
     }
 
     updateDistrict(district: District): Observable<any> {
-        return this.http.put(`${this.API_BASE}/district/update.php`, district);
+        return this.http.post(`${this.API_BASE}/district/update.php`, district);
     }
 
     deleteDistrict(id: number): Observable<any> {
-        return this.http.request('delete', `${this.API_BASE}/district/delete.php`, { body: { id } });
+        return this.http.post(`${this.API_BASE}/district/delete.php`, { id });
     }
 
     // Taluka Methods (Renamed from Tehsil)
@@ -101,11 +102,11 @@ export class MastersService {
     }
 
     updateTaluka(taluka: Taluka): Observable<any> {
-        return this.http.put(`${this.API_BASE}/taluka/update.php`, taluka);
+        return this.http.post(`${this.API_BASE}/taluka/update.php`, taluka);
     }
 
     deleteTaluka(id: number): Observable<any> {
-        return this.http.request('delete', `${this.API_BASE}/taluka/delete.php`, { body: { id } });
+        return this.http.post(`${this.API_BASE}/taluka/delete.php`, { id });
     }
 
     // Village Methods
@@ -123,11 +124,11 @@ export class MastersService {
     }
 
     updateVillage(village: Village): Observable<any> {
-        return this.http.put(`${this.API_BASE}/village/update.php`, village);
+        return this.http.post(`${this.API_BASE}/village/update.php`, village);
     }
 
     deleteVillage(id: number): Observable<any> {
-        return this.http.request('delete', `${this.API_BASE}/village/delete.php`, { body: { id } });
+        return this.http.post(`${this.API_BASE}/village/delete.php`, { id });
     }
 
     // Channel Methods
@@ -135,21 +136,27 @@ export class MastersService {
         return this.http.get<any[]>(`${this.API_BASE}/channel/list.php`).pipe(
             map(data => data.map(c => ({
                 ...c,
+                isDefault: !!c.isDefault,
+                sequence: c.sequence ? Number(c.sequence) : 0,
                 createdAt: c.createdAt ? new Date(c.createdAt) : undefined
             })))
         );
     }
 
-    createChannel(channel: { name: string, reminderDays: number }): Observable<any> {
+    createChannel(channel: { name: string, reminderDays: number, isDefault?: boolean, sequence?: number }): Observable<any> {
         return this.http.post(`${this.API_BASE}/channel/create.php`, channel);
     }
 
     updateChannel(channel: Channel): Observable<any> {
-        return this.http.put(`${this.API_BASE}/channel/update.php`, channel);
+        return this.http.post(`${this.API_BASE}/channel/update.php`, channel);
+    }
+
+    updateChannelSequences(ids: number[]): Observable<any> {
+        return this.http.post(`${this.API_BASE}/channel/update_sequence.php`, { ids });
     }
 
     deleteChannel(id: number): Observable<any> {
-        return this.http.request('delete', `${this.API_BASE}/channel/delete.php`, { body: { id } });
+        return this.http.post(`${this.API_BASE}/channel/delete.php`, { id });
     }
 
     // Scope of Work Methods
@@ -167,11 +174,11 @@ export class MastersService {
     }
 
     updateScopeOfWork(scope: ScopeOfWork): Observable<any> {
-        return this.http.put(`${this.API_BASE}/scope-of-work/update.php`, scope);
+        return this.http.post(`${this.API_BASE}/scope-of-work/update.php`, scope);
     }
 
     deleteScopeOfWork(id: number): Observable<any> {
-        return this.http.request('delete', `${this.API_BASE}/scope-of-work/delete.php`, { body: { id } });
+        return this.http.post(`${this.API_BASE}/scope-of-work/delete.php`, { id });
     }
 
     // Client Methods
@@ -189,11 +196,11 @@ export class MastersService {
     }
 
     updateClient(client: Client): Observable<any> {
-        return this.http.put(`${this.API_BASE}/client/update.php`, client);
+        return this.http.post(`${this.API_BASE}/client/update.php`, client);
     }
 
     deleteClient(id: number): Observable<any> {
-        return this.http.request('delete', `${this.API_BASE}/client/delete.php`, { body: { id } });
+        return this.http.post(`${this.API_BASE}/client/delete.php`, { id });
     }
 
     // Application Methods
@@ -201,6 +208,11 @@ export class MastersService {
         return this.http.get<any[]>(`${this.API_BASE}/application/list.php`).pipe(
             map(data => data.map(a => ({
                 ...a,
+                channelId: a.channelId ? Number(a.channelId) : null,
+                followupId: a.followupId ? Number(a.followupId) : null,
+                isCompleted: !!a.isCompleted,
+                isClosed: !!a.isClosed,
+                assignees: a.assignees ? a.assignees.map((asg: any) => ({ ...asg, id: Number(asg.id) })) : [],
                 createdAt: a.createdAt ? new Date(a.createdAt) : undefined
             })))
         );
@@ -211,10 +223,85 @@ export class MastersService {
     }
 
     updateApplication(application: Application): Observable<any> {
-        return this.http.put(`${this.API_BASE}/application/update.php`, application);
+        return this.http.post(`${this.API_BASE}/application/update.php`, application);
+    }
+
+    updateApplicationChannel(id: number, channelId: number | null): Observable<any> {
+        return this.http.post(`${this.API_BASE}/application/update_channel.php`, { id, channelId });
+    }
+
+    updateApplicationFollowup(id: number, followupId: number | null): Observable<any> {
+        return this.http.post(`${this.API_BASE}/application/update_followup.php`, { id, followupId });
     }
 
     deleteApplication(id: number): Observable<any> {
-        return this.http.request('delete', `${this.API_BASE}/application/delete.php`, { body: { id } });
+        return this.http.post(`${this.API_BASE}/application/delete.php`, { id });
+    }
+
+    // Application Comments & Attachments Methods
+    getApplicationComments(applicationId: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.API_BASE}/application/get_comments.php?applicationId=${applicationId}`).pipe(
+            map(comments => comments.map(c => ({
+                ...c,
+                createdAt: new Date(c.createdAt)
+            })))
+        );
+    }
+
+    addApplicationComment(applicationId: number, userId: number | string, content: string): Observable<any> {
+        return this.http.post(`${this.API_BASE}/application/add_comment.php`, { applicationId, userId, content });
+    }
+
+    getApplicationAttachments(applicationId: number): Observable<any[]> {
+        return this.http.get<any[]>(`${this.API_BASE}/application/get_attachments.php?applicationId=${applicationId}`);
+    }
+
+    attachApplicationFile(applicationId: number, fileId: string): Observable<any> {
+        return this.http.post(`${this.API_BASE}/application/attach_file.php`, { applicationId, fileId });
+    }
+
+    removeApplicationAttachment(id: string): Observable<any> {
+        return this.http.get(`${this.API_BASE}/application/remove_attachment.php?id=${id}`);
+    }
+
+    // Followup Methods
+    getFollowups(): Observable<Followup[]> {
+        return this.http.get<any[]>(`${this.API_BASE}/followup/list.php`).pipe(
+            map(data => data.map(f => ({
+                ...f,
+                isDefault: !!f.isDefault,
+                isCompleted: !!f.isCompleted,
+                sequence: f.sequence ? Number(f.sequence) : 0,
+                createdAt: f.createdAt ? new Date(f.createdAt) : undefined
+            })))
+        );
+    }
+
+    createFollowup(followup: { name: string, reminderDays: number, isDefault?: boolean, isCompleted?: boolean, sequence?: number }): Observable<any> {
+        return this.http.post(`${this.API_BASE}/followup/create.php`, followup);
+    }
+
+    updateFollowup(followup: Followup): Observable<any> {
+        return this.http.post(`${this.API_BASE}/followup/update.php`, followup);
+    }
+
+    updateFollowupSequences(ids: number[]): Observable<any> {
+        return this.http.post(`${this.API_BASE}/followup/update_sequence.php`, { ids });
+    }
+
+    deleteFollowup(id: number): Observable<any> {
+        return this.http.post(`${this.API_BASE}/followup/delete.php`, { id });
+    }
+
+    markApplicationCompleted(id: number): Observable<any> {
+        return this.http.post(`${this.API_BASE}/application/mark_completed.php`, { id });
+    }
+
+    closeApplication(id: number): Observable<any> {
+        return this.http.post(`${this.API_BASE}/application/close_task.php`, { id });
+    }
+
+    reopenApplication(id: number): Observable<any> {
+        return this.http.post(`${this.API_BASE}/application/reopen_task.php`, { id });
     }
 }

@@ -1,8 +1,10 @@
 <?php
-include_once '../config/db.php';
+header("Content-Type: application/json; charset=UTF-8");
 
-if(isset($_GET['taskId'])) {
-    $taskId = $_GET['taskId'];
+include_once '../../config/db.php';
+
+if(isset($_GET['applicationId'])) {
+    $applicationId = $_GET['applicationId'];
     
     $sql = "
     WITH FolderPaths (Id, FullPath) AS (
@@ -16,18 +18,18 @@ if(isset($_GET['taskId'])) {
         WHERE f.IsFolder = 1
     )
     SELECT CAST(a.Id AS NVARCHAR(36)) as AttachmentId, 
-                   CAST(f.Id AS NVARCHAR(36)) as FileId, 
-                   f.FileName as Name, 
-                   f.FileSize as Size,
-                   ISNULL(fp.FullPath, 'Home') as LogicalPath,
-                   a.CreatedAt
-            FROM TaskAttachments a
-            JOIN Files f ON a.FileId = f.Id
-            LEFT JOIN FolderPaths fp ON f.ParentId = fp.Id
-            WHERE a.TaskId = ?
-            ORDER BY a.CreatedAt DESC";
+           CAST(f.Id AS NVARCHAR(36)) as FileId, 
+           f.FileName as Name, 
+           f.FileSize as Size,
+           ISNULL(fp.FullPath, 'Home') as LogicalPath,
+           a.CreatedAt
+    FROM ApplicationAttachments a
+    JOIN Files f ON a.FileId = f.Id
+    LEFT JOIN FolderPaths fp ON f.ParentId = fp.Id
+    WHERE a.ApplicationId = ?
+    ORDER BY a.CreatedAt DESC";
             
-    $params = array($taskId);
+    $params = array($applicationId);
     $stmt = sqlsrv_query($conn, $sql, $params);
     
     if($stmt === false) {
@@ -35,12 +37,10 @@ if(isset($_GET['taskId'])) {
         die(json_encode(array("error" => sqlsrv_errors())));
     }
     
-    
     $attachments = array();
     
-    While($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    while($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         $ext = pathinfo($row['Name'], PATHINFO_EXTENSION);
-        // Construct standard download URL
         $url = API_BASE_URL . "/files/download.php?id=" . $row['FileId'];
         
         $attachments[] = array(
@@ -58,6 +58,6 @@ if(isset($_GET['taskId'])) {
     echo json_encode($attachments);
 } else {
     http_response_code(400);
-    echo json_encode(array("message" => "Missing taskId."));
+    echo json_encode(array("message" => "Missing applicationId."));
 }
 ?>
