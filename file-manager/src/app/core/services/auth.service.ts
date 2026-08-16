@@ -54,18 +54,21 @@ export class AuthService {
                 id: u.id.toString(),
                 name: u.name,
                 email: u.email,
-                role: u.role.toLowerCase() as 'admin' | 'user'
+                role: u.role.toLowerCase() as 'admin' | 'user',
+                parentUserId: u.parentUserId ? u.parentUserId.toString() : null,
+                parentName: u.parentName || null
             }))),
             catchError(() => of([]))
         );
     }
 
     register(user: Omit<User, 'id'>): Observable<boolean> {
-        // user object has name, email, password, role
+        // user object has name, email, password, role, parentUserId
         return this.http.post<any>(`${this.API_BASE}/register.php`, {
             name: user.name,
             password: user.password,
-            role: user.role
+            role: user.role,
+            parentUserId: user.parentUserId || null
         }).pipe(
             map(() => true),
             catchError(err => throwError(() => new Error(err.error?.message || 'Registration failed')))
@@ -77,7 +80,8 @@ export class AuthService {
             id: user.id,
             name: user.name,
             role: user.role,
-            password: user.password
+            password: user.password,
+            parentUserId: user.parentUserId !== undefined ? user.parentUserId : null
         }).pipe(
             map(() => true),
             catchError(err => throwError(() => new Error(err.error?.message || 'Update failed')))

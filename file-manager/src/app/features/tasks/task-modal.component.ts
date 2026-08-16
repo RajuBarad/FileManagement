@@ -44,7 +44,15 @@ import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
               <textarea [(ngModel)]="description" rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="Add details..."></textarea>
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-3 gap-4">
+               <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status / Section</label>
+                  <select [(ngModel)]="status" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                      @for (sec of availableSections(); track sec.id) {
+                          <option [value]="sec.id">{{ sec.name }}</option>
+                      }
+                  </select>
+               </div>
                <div>
                   <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
                   <select [(ngModel)]="priority" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
@@ -78,7 +86,7 @@ import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
             </div>
           </div>
 
-          <!-- Comments Section (Comments Mode Only) -->
+          <!-- Comments & Sub-Tasks Section (Comments Mode Only) -->
           <div *ngIf="viewMode === 'comments'" class="space-y-6">
               <!-- Task Details Preview -->
               <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-100 dark:border-gray-600">
@@ -90,6 +98,97 @@ import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
                   </div>
               </div>
 
+              <!-- Sub-Tasks / Split Tasks Section -->
+              <div *ngIf="childUsers().length > 0 || subTasks().length > 0" class="border border-purple-100 dark:border-purple-900/30 rounded-xl p-4 bg-purple-50/30 dark:bg-purple-950/10 space-y-4">
+                  <div class="flex justify-between items-center">
+                      <h5 class="text-sm font-semibold text-purple-900 dark:text-purple-300 flex items-center gap-2">
+                          <lucide-icon name="git-fork" class="h-4 w-4 text-purple-600 dark:text-purple-400"></lucide-icon>
+                          Sub-Tasks / Split Tasks ({{ subTasks().length }})
+                      </h5>
+                      <button *ngIf="childUsers().length > 0" (click)="showAddSubTaskForm.set(!showAddSubTaskForm())" class="text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
+                          <lucide-icon name="plus" class="h-3.5 w-3.5"></lucide-icon>
+                          {{ showAddSubTaskForm() ? 'Cancel' : 'Split / Add Sub-Task' }}
+                      </button>
+                  </div>
+
+                  <!-- Overall Progress Bar if subtasks exist -->
+                  <div *ngIf="subTasks().length > 0" class="space-y-1">
+                      <div class="flex justify-between text-xs font-medium text-purple-700 dark:text-purple-300">
+                          <span>Sub-task Completion Progress</span>
+                          <span>{{ getCompletedSubTaskCount() }}/{{ subTasks().length }} Done ({{ getSubTaskProgressPercentage() }}%)</span>
+                      </div>
+                      <div class="w-full bg-purple-200 dark:bg-purple-900/40 h-2 rounded-full overflow-hidden">
+                          <div class="bg-purple-600 h-full transition-all duration-300 rounded-full" [style.width.%]="getSubTaskProgressPercentage()"></div>
+                      </div>
+                  </div>
+
+                  <!-- New Sub-Task Form -->
+                  <div *ngIf="showAddSubTaskForm()" class="bg-white dark:bg-gray-800 p-4 rounded-lg border border-purple-200 dark:border-purple-800 space-y-3 animate-in fade-in duration-150">
+                      <h6 class="text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">Assign Sub-Task to Child User</h6>
+                      <input type="text" [(ngModel)]="subTaskTitle" class="w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none focus:ring-2 focus:ring-purple-500" placeholder="Sub-task title...">
+                      
+                      <div class="grid grid-cols-3 gap-3">
+                          <div>
+                              <label class="block text-[11px] font-medium text-gray-600 dark:text-gray-400 mb-1">Assignee (Child User)</label>
+                              <select [(ngModel)]="subTaskAssigneeId" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none">
+                                  <option value="">Unassigned</option>
+                                  @for (u of childUsers(); track u.id) {
+                                      <option [value]="u.id">{{ u.name }} {{ u.parentName ? '(Sub-user of ' + u.parentName + ')' : '' }}</option>
+                                  }
+                              </select>
+                          </div>
+                          <div>
+                              <label class="block text-[11px] font-medium text-gray-600 dark:text-gray-400 mb-1">Priority</label>
+                              <select [(ngModel)]="subTaskPriority" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none">
+                                  <option value="Low">Low</option>
+                                  <option value="Medium">Medium</option>
+                                  <option value="High">High</option>
+                              </select>
+                          </div>
+                          <div>
+                              <label class="block text-[11px] font-medium text-gray-600 dark:text-gray-400 mb-1">Due Date</label>
+                              <input type="date" [(ngModel)]="subTaskDueDate" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-700 text-gray-900 dark:text-white outline-none">
+                          </div>
+                      </div>
+
+                      <div class="flex justify-end gap-2 pt-1">
+                          <button (click)="showAddSubTaskForm.set(false)" class="text-xs px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 rounded-lg">Cancel</button>
+                          <button (click)="createSubTask()" [disabled]="!subTaskTitle.trim()" class="text-xs bg-purple-600 text-white font-medium px-4 py-1.5 rounded-lg hover:bg-purple-700 disabled:opacity-50 transition">
+                              Create Sub-Task
+                          </button>
+                      </div>
+                  </div>
+
+                  <!-- Sub-Tasks List -->
+                  <div class="space-y-2 max-h-[220px] overflow-y-auto">
+                      @for (st of subTasks(); track st.id) {
+                          <div class="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3 shadow-xs">
+                              <div class="flex items-center gap-3 overflow-hidden">
+                                  <span class="h-2 w-2 rounded-full" [ngClass]="st.status === 'Done' ? 'bg-green-500' : (st.status === 'In Progress' ? 'bg-blue-500' : 'bg-gray-400')"></span>
+                                  <div class="flex flex-col overflow-hidden">
+                                      <span class="text-sm font-medium text-gray-800 dark:text-gray-200 truncate" [class.line-through]="st.status === 'Done'">{{ st.title }}</span>
+                                      <div class="flex items-center gap-2 text-[11px] text-gray-400">
+                                          <span class="flex items-center gap-1"><lucide-icon name="user" class="h-3 w-3"></lucide-icon> {{ getAssigneeNames(st) }}</span>
+                                          <span *ngIf="st.dueDate">• {{ st.dueDate | date:'shortDate' }}</span>
+                                      </div>
+                                  </div>
+                              </div>
+                              <div class="flex items-center gap-2 flex-shrink-0">
+                                  <select [ngModel]="st.status === 'Completed' ? 'Done' : st.status" (ngModelChange)="updateSubTaskStatus(st, $event)" class="text-xs border border-gray-200 dark:border-gray-700 rounded-lg py-1 px-2 bg-gray-50 dark:bg-gray-700 font-medium text-gray-700 dark:text-gray-300">
+                                      <option value="Pending">To Do</option>
+                                      <option value="In Progress">In Progress</option>
+                                      <option value="Review">Review</option>
+                                      <option value="Done">Done</option>
+                                  </select>
+                              </div>
+                          </div>
+                      }
+                      <div *ngIf="subTasks().length === 0 && !showAddSubTaskForm()" class="text-center text-gray-400 text-xs py-4 bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-200 dark:border-gray-700">
+                          No sub-tasks created yet. Click "Split / Add Sub-Task" to divide work among child users.
+                      </div>
+                  </div>
+              </div>
+
               <!-- Comments List -->
               <div class="space-y-4">
                   <h5 class="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
@@ -97,7 +196,7 @@ import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
                       Discussion
                   </h5>
                   
-                  <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                  <div class="space-y-4 max-h-[250px] overflow-y-auto pr-2">
                       @for (comment of comments(); track comment.id) {
                           <div class="flex gap-3">
                               <div class="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 font-bold text-xs shrink-0">
@@ -230,10 +329,19 @@ export class TaskModalComponent {
 
   isOpen = signal(false);
   users = signal<User[]>([]);
+  childUsers = signal<User[]>([]);
   comments = signal<any[]>([]);
   attachments = signal<any[]>([]);
   searchResults = signal<FileSystemItem[]>([]);
   isSearchingAttachments = signal(false);
+
+  // Sub-Tasks signals & state
+  subTasks = signal<Task[]>([]);
+  showAddSubTaskForm = signal(false);
+  subTaskTitle = '';
+  subTaskPriority: 'Low' | 'Medium' | 'High' = 'Medium';
+  subTaskDueDate = '';
+  subTaskAssigneeId = '';
 
   isSaving = signal(false);
   viewMode: 'create' | 'edit' | 'comments' = 'create';
@@ -245,12 +353,17 @@ export class TaskModalComponent {
 
   title = '';
   description = '';
+  status = 'Pending';
   priority: 'Low' | 'Medium' | 'High' = 'Medium';
   dueDate = '';
   assignedToIds: string[] = []; // Changed to array
+  availableSections = signal<{ id: string; name: string }[]>([]);
 
   constructor() {
-    this.authService.getUsers().subscribe(u => this.users.set(u));
+    this.authService.getUsers().subscribe(u => {
+      this.users.set(u);
+      this.updateChildUsers();
+    });
 
     this.searchSubject.pipe(
       debounceTime(300),
@@ -269,14 +382,40 @@ export class TaskModalComponent {
     });
   }
 
-  open(mode: 'create' | 'edit' | 'comments', task?: Task) {
+  updateChildUsers() {
+    const me = this.authService.currentUser();
+    if (!me) {
+      this.childUsers.set([]);
+      return;
+    }
+    
+    // Strictly filter for direct child users of the logged-in user
+    const directChildren = this.users().filter(u => u.parentUserId && String(u.parentUserId) === String(me.id));
+    this.childUsers.set(directChildren);
+  }
+
+  loadAvailableSections() {
+    const boardSections = this.taskService.getBoardSections();
+    const map = new Map<string, { id: string, name: string }>();
+    for (const sec of boardSections) {
+      if (!map.has(sec.id)) {
+        map.set(sec.id, { id: sec.id, name: sec.name });
+      }
+    }
+    this.availableSections.set(Array.from(map.values()));
+  }
+
+  open(mode: 'create' | 'edit' | 'comments', task?: Task, initialStatus?: string) {
     this.reset();
+    this.loadAvailableSections();
+    this.updateChildUsers();
     this.viewMode = mode;
 
     if (task) {
       this.editingTaskId = task.id;
       this.title = task.title;
       this.description = task.description;
+      this.status = (task.status === 'Completed' ? 'Done' : task.status) || 'Pending';
       this.priority = task.priority;
       this.dueDate = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '';
 
@@ -288,12 +427,17 @@ export class TaskModalComponent {
         this.assignedToIds = task.assignedToUserId ? [task.assignedToUserId] : [];
       }
 
+      this.loadSubTasks();
+
       if (mode === 'comments') {
         this.loadComments();
         this.loadAttachments();
       }
     } else {
       // Create mode defaults
+      if (initialStatus) {
+        this.status = initialStatus;
+      }
       const me = this.authService.currentUser();
       if (me) this.assignedToIds = [me.id];
     }
@@ -309,7 +453,7 @@ export class TaskModalComponent {
     switch (this.viewMode) {
       case 'create': return 'New Task';
       case 'edit': return 'Edit Task';
-      case 'comments': return 'Comments';
+      case 'comments': return 'Task Details & Sub-Tasks';
       default: return 'Task';
     }
   }
@@ -325,6 +469,7 @@ export class TaskModalComponent {
   reset() {
     this.title = '';
     this.description = '';
+    this.status = 'Pending';
     this.priority = 'Medium';
     this.dueDate = '';
     this.assignedToIds = [];
@@ -333,6 +478,11 @@ export class TaskModalComponent {
     this.comments.set([]);
     this.attachments.set([]);
     this.searchResults.set([]);
+    this.subTasks.set([]);
+    this.showAddSubTaskForm.set(false);
+    this.subTaskTitle = '';
+    this.subTaskAssigneeId = '';
+    this.subTaskDueDate = '';
     this.editingTaskId = null;
   }
 
@@ -362,6 +512,59 @@ export class TaskModalComponent {
     if (this.editingTaskId) {
       this.taskService.getAttachments(this.editingTaskId).subscribe(a => this.attachments.set(a));
     }
+  }
+
+  loadSubTasks() {
+    if (this.editingTaskId) {
+      this.taskService.getSubTasks(this.editingTaskId).subscribe(st => this.subTasks.set(st));
+    }
+  }
+
+  getCompletedSubTaskCount(): number {
+    return this.subTasks().filter(st => st.status === 'Done' || st.status === 'Completed').length;
+  }
+
+  getSubTaskProgressPercentage(): number {
+    const total = this.subTasks().length;
+    if (total === 0) return 0;
+    return Math.round((this.getCompletedSubTaskCount() / total) * 100);
+  }
+
+  getAssigneeNames(task: Task): string {
+    if (task.assignees && task.assignees.length > 0) {
+      return task.assignees.map(a => a.name).join(', ');
+    }
+    return this.getUserName(task.assignedToUserId);
+  }
+
+  createSubTask() {
+    if (!this.subTaskTitle.trim() || !this.editingTaskId) return;
+
+    const me = this.authService.currentUser();
+    const payload: any = {
+      title: this.subTaskTitle.trim(),
+      parentTaskId: this.editingTaskId,
+      createdByUserId: me!.id,
+      assignedToUserIds: this.subTaskAssigneeId ? [this.subTaskAssigneeId] : [],
+      priority: this.subTaskPriority,
+      dueDate: this.subTaskDueDate || undefined,
+      status: 'Pending'
+    };
+
+    this.taskService.createTask(payload).subscribe(() => {
+      this.subTaskTitle = '';
+      this.subTaskAssigneeId = '';
+      this.showAddSubTaskForm.set(false);
+      this.loadSubTasks();
+      this.onSave.emit();
+    });
+  }
+
+  updateSubTaskStatus(subTask: Task, newStatus: string) {
+    this.taskService.updateStatus(subTask.id, newStatus).subscribe(() => {
+      this.loadSubTasks();
+      this.onSave.emit();
+    });
   }
 
   onSearchChange(query: string) {
@@ -434,6 +637,7 @@ export class TaskModalComponent {
     const payload: any = {
       title: this.title,
       description: this.description,
+      status: this.status,
       priority: this.priority,
       dueDate: this.dueDate || undefined,
       assignedToUserIds: this.assignedToIds, // Send array
@@ -460,5 +664,3 @@ export class TaskModalComponent {
     }
   }
 }
-
-

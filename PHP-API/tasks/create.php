@@ -23,8 +23,11 @@ if(
     // Use first assignee as "primary" for legacy column, or NULL
     $primaryAssignee = count($assignedToUserIds) > 0 ? $assignedToUserIds[0] : null;
 
-    $sql = "INSERT INTO Tasks (Title, Description, Priority, DueDate, CreatedByUserId, AssignedToUserId) OUTPUT INSERTED.Id VALUES (?, ?, ?, ?, ?, ?)";
-    $params = array($title, $description, $priority, $dueDate, $createdByUserId, $primaryAssignee);
+    $status = isset($data->status) ? $data->status : 'Pending';
+    $parentTaskId = isset($data->parentTaskId) && !empty($data->parentTaskId) ? $data->parentTaskId : null;
+
+    $sql = "INSERT INTO Tasks (Title, Description, Status, Priority, DueDate, CreatedByUserId, AssignedToUserId, ParentTaskId) OUTPUT INSERTED.Id VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    $params = array($title, $description, $status, $priority, $dueDate, $createdByUserId, $primaryAssignee, $parentTaskId);
     
     $stmt = sqlsrv_query($conn, $sql, $params);
     

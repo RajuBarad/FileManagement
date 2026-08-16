@@ -8,9 +8,11 @@ if(isset($data->id)) {
     $username = isset($data->name) ? $data->name : null; // Frontend sends 'name' as username
     $role = isset($data->role) ? $data->role : null;
     $password = isset($data->password) && !empty($data->password) ? $data->password : null;
+    $hasParent = property_exists($data, 'parentUserId');
+    $parentUserId = ($hasParent && !empty($data->parentUserId) && $data->parentUserId !== 'null') ? (string)$data->parentUserId : null;
 
     // Build Error Checking
-    if (!$username && !$role && !$password) {
+    if (!$username && !$role && !$password && !$hasParent) {
         http_response_code(400);
         echo json_encode(array("message" => "No data to update."));
         exit;
@@ -32,6 +34,10 @@ if(isset($data->id)) {
     if ($password) {
         $updates[] = "Password = ?";
         $params[] = password_hash($password, PASSWORD_BCRYPT);
+    }
+    if ($hasParent) {
+        $updates[] = "ParentUserId = ?";
+        $params[] = $parentUserId;
     }
 
     $sql .= implode(", ", $updates);

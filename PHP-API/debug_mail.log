@@ -695,3 +695,156 @@ BODY:
         </body>
         </html>
         
+--------------------------------------------------
+DATE: 2026-08-09 18:46:45
+TO: Raju
+SUBJECT: New Task Assigned: test multi assign
+BODY: 
+        <html>
+        <head>
+          <title>New Task Assignment</title>
+        </head>
+        <body>
+          <h2>You have a new task!</h2>
+          <p><strong>Raju</strong> has assigned you a new task:</p>
+          <h3>test multi assign</h3>
+          <p>Click <a href='http://localhost:4200/tasks'>here</a> to view details.</p>
+        </body>
+        </html>
+        
+--------------------------------------------------
+DATE: 2026-08-09 18:46:47
+TO: User1
+SUBJECT: New Task Assigned: test multi assign
+BODY: 
+        <html>
+        <head>
+          <title>New Task Assignment</title>
+        </head>
+        <body>
+          <h2>You have a new task!</h2>
+          <p><strong>Raju</strong> has assigned you a new task:</p>
+          <h3>test multi assign</h3>
+          <p>Click <a href='http://localhost:4200/tasks'>here</a> to view details.</p>
+        </body>
+        </html>
+        
+--------------------------------------------------
+DATE: 2026-08-09 18:47:35
+TO: user3-user1
+SUBJECT: New Task Assigned: test this
+BODY: 
+        <html>
+        <head>
+          <title>New Task Assignment</title>
+        </head>
+        <body>
+          <h2>You have a new task!</h2>
+          <p><strong>User1</strong> has assigned you a new task:</p>
+          <h3>test this</h3>
+          <p>Click <a href='http://localhost:4200/tasks'>here</a> to view details.</p>
+        </body>
+        </html>
+        
+--------------------------------------------------
+DATE: 2026-08-09 18:48:46
+TO: test
+SUBJECT: New Task Assigned: test 2
+BODY: 
+        <html>
+        <head>
+          <title>New Task Assignment</title>
+        </head>
+        <body>
+          <h2>You have a new task!</h2>
+          <p><strong>User1</strong> has assigned you a new task:</p>
+          <h3>test 2</h3>
+          <p>Click <a href='http://localhost:4200/tasks'>here</a> to view details.</p>
+        </body>
+        </html>
+        
+--------------------------------------------------
+DATE: 2026-08-10 18:31:52
+TO: user3-user1
+SUBJECT: New Task Assigned: test
+BODY: 
+        <html>
+        <head>
+          <title>New Task Assignment</title>
+        </head>
+        <body>
+          <h2>You have a new task!</h2>
+          <p><strong>User1</strong> has assigned you a new task:</p>
+          <h3>test</h3>
+          <p>Click <a href='http://localhost:4200/tasks'>here</a> to view details.</p>
+        </body>
+        </html>
+        
+--------------------------------------------------
+DATE: 2026-08-10 18:59:45
+TO: User1
+SUBJECT: New Task Assigned: test deliver
+BODY: 
+        <html>
+        <head>
+          <title>New Task Assignment</title>
+        </head>
+        <body>
+          <h2>You have a new task!</h2>
+          <p><strong>User1</strong> has assigned you a new task:</p>
+          <h3>test deliver</h3>
+          <p>Click <a href='http://localhost:4200/tasks'>here</a> to view details.</p>
+        </body>
+        </html>
+        
+--------------------------------------------------
+DATE: 2026-08-10 19:00:10
+TO: User1
+SUBJECT: New Task Assigned: dsf
+BODY: 
+        <html>
+        <head>
+          <title>New Task Assignment</title>
+        </head>
+        <body>
+          <h2>You have a new task!</h2>
+          <p><strong>User1</strong> has assigned you a new task:</p>
+          <h3>dsf</h3>
+          <p>Click <a href='http://localhost:4200/tasks'>here</a> to view details.</p>
+        </body>
+        </html>
+        
+--------------------------------------------------
+DATE: 2026-08-10 19:00:49
+TO: User1
+SUBJECT: New Task Assigned: asd
+BODY: 
+        <html>
+        <head>
+          <title>New Task Assignment</title>
+        </head>
+        <body>
+          <h2>You have a new task!</h2>
+          <p><strong>User1</strong> has assigned you a new task:</p>
+          <h3>asd</h3>
+          <p>Click <a href='http://localhost:4200/tasks'>here</a> to view details.</p>
+        </body>
+        </html>
+        
+--------------------------------------------------
+DATE: 2026-08-10 19:01:20
+TO: User1
+SUBJECT: New Task Assigned: sdf
+BODY: 
+        <html>
+        <head>
+          <title>New Task Assignment</title>
+        </head>
+        <body>
+          <h2>You have a new task!</h2>
+          <p><strong>User1</strong> has assigned you a new task:</p>
+          <h3>sdf</h3>
+          <p>Click <a href='http://localhost:4200/tasks'>here</a> to view details.</p>
+        </body>
+        </html>
+        

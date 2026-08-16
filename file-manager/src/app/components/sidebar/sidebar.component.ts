@@ -91,13 +91,14 @@ import { LayoutService } from '../../core/services/layout.service';
           <lucide-icon name="check-square" class="h-5 w-5"></lucide-icon>
           Tasks
         </a>
+        <!-- Masters Menu 
         <a routerLink="/followups" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
            class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
           <lucide-icon name="rotate-ccw" class="h-5 w-5"></lucide-icon>
           Followups
         </a>
 
-        <!-- Masters Menu -->
+        
         <div class="space-y-1">
           <button (click)="toggleMasters()" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
             <div class="flex items-center gap-3">
@@ -149,7 +150,7 @@ import { LayoutService } from '../../core/services/layout.service';
               Task Master
             </a>
           </div>
-        </div>
+        </div>-->
       </nav>
       
       <!-- Storage widget removed -->

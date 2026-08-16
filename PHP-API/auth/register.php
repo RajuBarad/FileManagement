@@ -7,6 +7,7 @@ if(isset($data->name) && isset($data->password) && isset($data->role)) {
     $username = $data->name; // Frontend sends 'name' (or 'email')
     $password = password_hash($data->password, PASSWORD_BCRYPT);
     $role = $data->role;
+    $parentUserId = isset($data->parentUserId) && !empty($data->parentUserId) ? $data->parentUserId : null;
 
     // Check if user exists
     $checkSql = "SELECT Id FROM Users WHERE Username = ?";
@@ -17,8 +18,8 @@ if(isset($data->name) && isset($data->password) && isset($data->role)) {
         exit;
     }
 
-    $sql = "INSERT INTO Users (Username, Password, Role) VALUES (?, ?, ?)";
-    $params = array($username, $password, $role);
+    $sql = "INSERT INTO Users (Username, Password, Role, ParentUserId) VALUES (?, ?, ?, ?)";
+    $params = array($username, $password, $role, $parentUserId);
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if($stmt) {

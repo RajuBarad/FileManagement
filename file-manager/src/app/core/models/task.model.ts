@@ -13,13 +13,23 @@ export interface Task {
     createdByName: string;
     completedAt?: Date;
     updatedAt?: Date;
+    parentTaskId?: string;
+    subTasksCount?: number;
+    completedSubTasksCount?: number;
+    inProgressSubTasksCount?: number;
+    progressPercentage?: number;
+    assigneeName?: string;
+    subTasks?: Task[];
 }
 
 export interface CreateTaskRequest {
     title: string;
     description?: string;
-    assignedToUserId: string;
+    assignedToUserId?: string;
+    assignedToUserIds?: string[];
     createdByUserId: string;
     priority?: 'Low' | 'Medium' | 'High';
     dueDate?: string; // YYYY-MM-DD
+    status?: string;
+    parentTaskId?: string;
 }

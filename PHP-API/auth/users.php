@@ -4,7 +4,9 @@ include_once '../config/db.php';
 if($_SERVER['REQUEST_METHOD'] == 'GET') {
     // Ideally check if requester is Admin, but for simplicity we allow logged in users (or all for now)
     
-    $sql = "SELECT Id, Username, Role FROM Users";
+    $sql = "SELECT u.Id, u.Username, u.Role, u.ParentUserId, pu.Username as ParentName 
+            FROM Users u 
+            LEFT JOIN Users pu ON CAST(u.ParentUserId AS NVARCHAR(36)) = CAST(pu.Id AS NVARCHAR(36))";
     $stmt = sqlsrv_query($conn, $sql);
     
     if($stmt === false) {
@@ -15,10 +17,12 @@ if($_SERVER['REQUEST_METHOD'] == 'GET') {
     $users = array();
     while($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         $users[] = array(
-            "id" => $row['Id'], // Keep case consistent depending on frontend model
+            "id" => (string)$row['Id'], // Keep ID strictly string
             "name" => $row['Username'],
-            "email" => $row['Username'], // Map username to email for frontend compatibility
-            "role" => $row['Role']
+            "email" => $row['Username'],
+            "role" => $row['Role'],
+            "parentUserId" => $row['ParentUserId'] !== null ? (string)$row['ParentUserId'] : null,
+            "parentName" => $row['ParentName']
         );
     }
     

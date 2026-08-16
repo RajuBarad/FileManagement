@@ -19,19 +19,22 @@ if(isset($_GET['userId'])) {
 
     // Fetch tasks where I am an assignee OR the creator
     // We join TaskAssignments (ta) to get all assignees for the tasks I can see
-    $sql = "SELECT CAST(t.Id AS NVARCHAR(36)) as Id, t.Title, t.Description, t.Status, t.Priority, t.DueDate, t.CreatedAt, t.CompletedAt, t.UpdatedAt,
+    $sql = "SELECT CAST(t.Id AS NVARCHAR(36)) as Id, t.Title, t.Description, t.Status, t.Priority, t.DueDate, t.CreatedAt, t.CompletedAt, t.UpdatedAt, CAST(t.ParentTaskId AS NVARCHAR(36)) as ParentTaskId,
                    CAST(ta.UserId AS NVARCHAR(20)) as AssigneeId, au.Username as AssigneeName,
-                   t.CreatedByUserId, cu.Username as CreatedByName
+                   t.CreatedByUserId, cu.Username as CreatedByName,
+                   (SELECT COUNT(*) FROM Tasks st WHERE st.ParentTaskId = t.Id) as SubTasksCount,
+                   (SELECT COUNT(*) FROM Tasks st WHERE st.ParentTaskId = t.Id AND st.Status = 'Done') as CompletedSubTasksCount,
+                   (SELECT COUNT(*) FROM Tasks st WHERE st.ParentTaskId = t.Id AND st.Status = 'In Progress') as InProgressSubTasksCount
             FROM Tasks t
             LEFT JOIN TaskAssignments ta ON t.Id = ta.TaskId
             LEFT JOIN Users au ON ta.UserId = au.Id
             JOIN Users cu ON t.CreatedByUserId = cu.Id
             WHERE (t.CreatedByUserId = ? 
                OR EXISTS (SELECT 1 FROM TaskAssignments check_ta WHERE check_ta.TaskId = t.Id AND check_ta.UserId = ?))
+               AND NOT EXISTS (SELECT 1 FROM Tasks pt WHERE pt.Id = t.ParentTaskId AND pt.Status IN ('Done', 'Completed'))
                $archiveClause
             ORDER BY t.CreatedAt DESC";
             
-            // Note: Params are still just 2 userIds. Archive clause is static string injection (safe as it's hardcoded logic, not user input directly)
     $params = array($userId, $userId);
     $stmt = sqlsrv_query($conn, $sql, $params);
     
@@ -46,6 +49,11 @@ if(isset($_GET['userId'])) {
         $taskId = $row['Id'];
         
         if(!isset($tasksMap[$taskId])) {
+            $subCount = (int)($row['SubTasksCount'] ?? 0);
+            $completedSubCount = (int)($row['CompletedSubTasksCount'] ?? 0);
+            $inProgressSubCount = (int)($row['InProgressSubTasksCount'] ?? 0);
+            $progressPercentage = $subCount > 0 ? (int)round(($completedSubCount / $subCount) * 100) : 0;
+
             $tasksMap[$taskId] = array(
                 'id' => $row['Id'],
                 'title' => $row['Title'],
@@ -56,8 +64,12 @@ if(isset($_GET['userId'])) {
                 'createdAt' => $row['CreatedAt']->format('Y-m-d H:i:s'),
                 'updatedAt' => isset($row['UpdatedAt']) ? $row['UpdatedAt']->format('Y-m-d H:i:s') : null,
                 'completedAt' => isset($row['CompletedAt']) ? $row['CompletedAt']->format('Y-m-d H:i:s') : null,
-                'assignees' => array(), // New array for multiple assignees
-                // Keep backward compatibility if needed, but client should update
+                'parentTaskId' => $row['ParentTaskId'],
+                'subTasksCount' => $subCount,
+                'completedSubTasksCount' => $completedSubCount,
+                'inProgressSubTasksCount' => $inProgressSubCount,
+                'progressPercentage' => $progressPercentage,
+                'assignees' => array(),
                 'createdByUserId' => $row['CreatedByUserId'],
                 'createdByName' => $row['CreatedByName']
             );
@@ -71,6 +83,52 @@ if(isset($_GET['userId'])) {
         }
     }
     
+    // Attach sub-tasks for any parent task that has subTasksCount > 0
+    $parentTaskIds = array();
+    foreach ($tasksMap as $tid => $tdata) {
+        if (!empty($tdata['subTasksCount']) && $tdata['subTasksCount'] > 0) {
+            $parentTaskIds[] = $tid;
+        }
+    }
+
+    if (!empty($parentTaskIds)) {
+        $inClause = implode(',', array_fill(0, count($parentTaskIds), '?'));
+        $subSql = "SELECT CAST(st.Id AS NVARCHAR(36)) as Id, st.Title, st.Status, st.Priority, CAST(st.ParentTaskId AS NVARCHAR(36)) as ParentTaskId,
+                          u.Username as AssigneeName
+                   FROM Tasks st
+                   LEFT JOIN TaskAssignments ta ON st.Id = ta.TaskId
+                   LEFT JOIN Users u ON ta.UserId = u.Id
+                   WHERE st.ParentTaskId IN ($inClause)
+                   ORDER BY st.CreatedAt ASC";
+        $subStmt = sqlsrv_query($conn, $subSql, $parentTaskIds);
+        if ($subStmt) {
+            $subMap = array();
+            while ($sRow = sqlsrv_fetch_array($subStmt, SQLSRV_FETCH_ASSOC)) {
+                $pId = $sRow['ParentTaskId'];
+                $stId = $sRow['Id'];
+                if (!isset($subMap[$pId])) {
+                    $subMap[$pId] = array();
+                }
+                if (!isset($subMap[$pId][$stId])) {
+                    $subMap[$pId][$stId] = array(
+                        'id' => $stId,
+                        'title' => $sRow['Title'],
+                        'status' => $sRow['Status'],
+                        'priority' => $sRow['Priority'],
+                        'assigneeName' => $sRow['AssigneeName']
+                    );
+                } else if ($sRow['AssigneeName'] && empty($subMap[$pId][$stId]['assigneeName'])) {
+                    $subMap[$pId][$stId]['assigneeName'] = $sRow['AssigneeName'];
+                }
+            }
+            foreach ($subMap as $pId => $stItems) {
+                if (isset($tasksMap[$pId])) {
+                    $tasksMap[$pId]['subTasks'] = array_values($stItems);
+                }
+            }
+        }
+    }
+
     echo json_encode(array_values($tasksMap));
 } else {
     http_response_code(400);

@@ -7,4 +7,6 @@ export interface User {
     name: string;
     role: UserRole;
     avatar?: string;
+    parentUserId?: string | null;
+    parentName?: string | null;
 }

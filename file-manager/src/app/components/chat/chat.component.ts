@@ -189,16 +189,16 @@ export class ChatComponent implements AfterViewChecked, OnDestroy {
     
     this.subs.add(this.chatService.history$.subscribe(hist => {
       this.history = hist;
-      this.cdr.detectChanges();
+      this.cdr.markForCheck();
     }));
 
     this.subs.add(this.chatService.onlineUsers$.subscribe(ids => {
         this.onlineUserIds.set(new Set(ids));
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
     }));
 
     this.subs.add(this.chatService.openChats$.subscribe(() => {
-        this.cdr.detectChanges();
+        this.cdr.markForCheck();
     }));
   }
 
