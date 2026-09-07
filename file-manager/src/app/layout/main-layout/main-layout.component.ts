@@ -7,6 +7,7 @@ import { LayoutService } from '../../core/services/layout.service';
 import { CommonModule } from '@angular/common';
 import { TaskModalComponent } from '../../features/tasks/task-modal.component';
 import { TaskService } from '../../core/services/task.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -46,12 +47,16 @@ import { TaskService } from '../../core/services/task.service';
 export class MainLayoutComponent implements OnInit {
   layoutService = inject(LayoutService);
   taskService = inject(TaskService);
+  permissionService = inject(PermissionService);
 
   @ViewChild('globalTaskModal') taskModal!: TaskModalComponent;
 
   ngOnInit() {
+    this.permissionService.loadMyPermissions().subscribe();
+
     this.taskService.modalRequest$.subscribe(req => {
       this.taskModal.open(req.mode, req.task);
     });
   }
 }
+

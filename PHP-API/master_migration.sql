@@ -14,6 +14,13 @@ BEGIN
 END
 GO
 
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Users]') AND name = 'AuthToken')
+BEGIN
+    ALTER TABLE Users ADD AuthToken NVARCHAR(255) NULL;
+    PRINT 'Added AuthToken column to Users table.';
+END
+GO
+
 -- 2. Files Table Updates
 IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Files]') AND name = 'FileSize')
 BEGIN

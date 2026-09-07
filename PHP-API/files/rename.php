@@ -62,13 +62,17 @@ if($stmt === false) {
     die(json_encode(array("error" => sqlsrv_errors())));
 }
 
+// Log activity
+include_once '../services/ActivityLogger.php';
+$itemType = isset($currentFile['IsFolder']) && $currentFile['IsFolder'] ? 'Folder' : 'File';
+logUserActivity($conn, $ownerId, 'Files', "Rename $itemType", $newName, $id, "Renamed $itemType to '$newName'");
+
 // Return updated object - mimicking filesystem item
 echo json_encode(array(
     "id" => $id,
     "name" => $newName,
     "parentId" => $parentId,
     "ownerId" => $ownerId,
-    // Add other fields if strictly needed by frontend, but usually it updates locally
     "message" => "Renamed successfully."
 ));
 ?>

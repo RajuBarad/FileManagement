@@ -69,8 +69,49 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
         $stmt = sqlsrv_query($conn, $sql, $params);
         if($stmt) {
              $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+             $folderId = $row['Id'];
+
+             // Sharing logic if sharedWithUserIds provided
+             $sharedNames = array();
+             if (isset($data['sharedWithUserIds']) && is_array($data['sharedWithUserIds']) && count($data['sharedWithUserIds']) > 0) {
+                 include_once '../notifications/helper.php';
+                 
+                 // Update IsShared on the folder
+                 sqlsrv_query($conn, "UPDATE Files SET IsShared = 1 WHERE Id = ?", array($folderId));
+
+                 foreach ($data['sharedWithUserIds'] as $shareUid) {
+                     $shareUid = intval($shareUid);
+                     if ($shareUid <= 0 || $shareUid == intval($ownerId)) continue;
+
+                     // Insert share if not exists
+                     $checkShare = "SELECT Id FROM GenericShares WHERE FileId = ? AND SharedWithUserId = ?";
+                     $chkStmt = sqlsrv_query($conn, $checkShare, array($folderId, $shareUid));
+                     if (!$chkStmt || !sqlsrv_has_rows($chkStmt)) {
+                         $shareSql = "INSERT INTO GenericShares (FileId, SharedWithUserId, Permission) VALUES (?, ?, 'Read')";
+                         sqlsrv_query($conn, $shareSql, array($folderId, $shareUid));
+                     }
+
+                     // Notification
+                     createNotification($conn, $shareUid, "New Folder Shared", "A folder '$name' has been shared with you.", "FolderShare", $folderId);
+
+                     // Fetch shared user's name for log details
+                     $uStmt = sqlsrv_query($conn, "SELECT Username FROM Users WHERE Id = ?", array($shareUid));
+                     if ($uStmt && $uRow = sqlsrv_fetch_array($uStmt, SQLSRV_FETCH_ASSOC)) {
+                         $sharedNames[] = $uRow['Username'];
+                     }
+                 }
+             }
+
+             // Log activity
+             include_once '../services/ActivityLogger.php';
+             $logDetails = "Created folder '$name'";
+             if (count($sharedNames) > 0) {
+                 $logDetails .= " and shared with " . count($sharedNames) . " user(s): " . implode(', ', $sharedNames);
+             }
+             logUserActivity($conn, $ownerId, 'Files', 'Create Folder', $name, $folderId, $logDetails);
+
              http_response_code(201);
-             echo json_encode(array("message" => "Folder created.", "id" => $row['Id']));
+             echo json_encode(array("message" => "Folder created.", "id" => $folderId, "sharedCount" => count($sharedNames)));
         } else {
              http_response_code(500);
              echo json_encode(array("error" => sqlsrv_errors()));
@@ -219,13 +260,15 @@ if($_SERVER['REQUEST_METHOD'] == 'POST') {
                 $params = array($fileName, $targetFilePath, $size, $ownerId, $finalParentId);
             }
             // $sql and $params are set, execute query
-
             $stmt = sqlsrv_query($conn, $sql, $params);
-            
+
             if($stmt) {
                 $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+                $uploadedFileId = $row['Id'];
+                include_once '../services/ActivityLogger.php';
+                logUserActivity($conn, $ownerId, 'Files', isset($existingFileId) && $existingFileId ? 'Update Version' : 'Upload File', $fileName, $uploadedFileId, "Uploaded file '$fileName' (" . round($size / 1024, 2) . " KB)");
                 http_response_code(201);
-                echo json_encode(array("message" => "File uploaded successfully.", "id" => $row['Id']));
+                echo json_encode(array("message" => "File uploaded successfully.", "id" => $uploadedFileId));
             } else {
                 http_response_code(500);
                 file_put_contents("../php_upload_debug.log", "SQL Error: " . print_r(sqlsrv_errors(), true) . "\n", FILE_APPEND);

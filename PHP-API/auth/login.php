@@ -20,11 +20,21 @@ if(isset($data->username) && isset($data->password)) {
         $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
         
         if(password_verify($password, $row['Password'])) {
+            $token = bin2hex(random_bytes(32));
+            $updateSql = "UPDATE Users SET AuthToken = ? WHERE Id = ?";
+            sqlsrv_query($conn, $updateSql, array($token, $row['Id']));
+
             $user_arr = array(
                 "Id" => $row['Id'],
                 "Username" => $row['Username'],
-                "Role" => $row['Role']
+                "Role" => $row['Role'],
+                "Token" => $token
             );
+
+            // Log activity
+            include_once '../services/ActivityLogger.php';
+            logUserActivity($conn, $row['Id'], 'Auth', 'Login', 'User Login', $row['Id'], "User '{$row['Username']}' logged in successfully", $row['Username'], $row['Role']);
+
             http_response_code(200);
             echo json_encode($user_arr);
         } else {

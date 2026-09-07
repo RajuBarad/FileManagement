@@ -50,6 +50,13 @@ if(isset($data->fileId) && isset($data->sharedWithUserId) && isset($data->permis
             file_put_contents('../share_debug.log', date('Y-m-d H:i:s') . " - Failed to fetch file name or file not found for notification. FileId: $fileId. Error: " . print_r(sqlsrv_errors(), true) . "\n", FILE_APPEND);
         }
         
+        // Activity log
+        include_once '../services/ActivityLogger.php';
+        $currentUserId = isset($data->currentUserId) ? $data->currentUserId : null;
+        $uTarget = sqlsrv_query($conn, "SELECT Username FROM Users WHERE Id = ?", array($sharedWithUserId));
+        $targetUserName = ($uTarget && $tr = sqlsrv_fetch_array($uTarget, SQLSRV_FETCH_ASSOC)) ? $tr['Username'] : "User #$sharedWithUserId";
+        logUserActivity($conn, $currentUserId, 'Files', 'Share ' . (isset($isFolder) && $isFolder ? 'Folder' : 'File'), isset($fileName) ? $fileName : "Item", $fileId, "Shared with $targetUserName (Permission: $permission)");
+
         http_response_code(201);
         echo json_encode(array("message" => "File shared successfully."));
     } else {

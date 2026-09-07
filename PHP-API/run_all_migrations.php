@@ -4,10 +4,15 @@ include_once 'config/db.php';
 header("Content-Type: application/json; charset=UTF-8");
 
 $queries = [
-    // 1. Hierarchy Columns
+    // 1. Hierarchy & Auth Columns
     "IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'ParentUserId' AND Object_ID = Object_ID(N'Users'))
     BEGIN
         ALTER TABLE Users ADD ParentUserId NVARCHAR(36) NULL;
+    END",
+
+    "IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'AuthToken' AND Object_ID = Object_ID(N'Users'))
+    BEGIN
+        ALTER TABLE Users ADD AuthToken NVARCHAR(255) NULL;
     END",
 
     "IF NOT EXISTS (SELECT * FROM sys.columns WHERE Name = N'ParentTaskId' AND Object_ID = Object_ID(N'Tasks'))
@@ -124,8 +129,53 @@ $queries = [
             CreatedAt DATETIME DEFAULT GETDATE(),
             FOREIGN KEY (UserId) REFERENCES Users(Id)
         );
+    END",
+
+    // 8. UserActivityLogs Table
+    "IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[UserActivityLogs]') AND type in (N'U'))
+    BEGIN
+        CREATE TABLE UserActivityLogs (
+            Id INT IDENTITY(1,1) PRIMARY KEY,
+            UserId INT NULL,
+            UserName NVARCHAR(100) NULL,
+            UserRole NVARCHAR(50) NULL,
+            Module NVARCHAR(50) NOT NULL,
+            Action NVARCHAR(100) NOT NULL,
+            EntityName NVARCHAR(255) NULL,
+            EntityId NVARCHAR(100) NULL,
+            Details NVARCHAR(MAX) NULL,
+            IpAddress NVARCHAR(50) NULL,
+            CreatedAt DATETIME DEFAULT GETDATE()
+        );
+    END",
+
+    // 9. UserPermissions Table
+    "IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[UserPermissions]') AND type in (N'U'))
+    BEGIN
+        CREATE TABLE UserPermissions (
+            Id INT IDENTITY(1,1) PRIMARY KEY,
+            UserId INT NOT NULL,
+            ModuleKey NVARCHAR(50) NOT NULL,
+            CanView BIT NOT NULL DEFAULT 0,
+            CanAdd BIT NOT NULL DEFAULT 0,
+            CanUpdate BIT NOT NULL DEFAULT 0,
+            CanDelete BIT NOT NULL DEFAULT 0,
+            CreatedAt DATETIME DEFAULT GETDATE(),
+            UpdatedAt DATETIME DEFAULT GETDATE(),
+            CONSTRAINT FK_UserPermissions_User FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE,
+            CONSTRAINT UQ_User_Module UNIQUE (UserId, ModuleKey)
+        );
+        CREATE INDEX IX_UserPermissions_UserId ON UserPermissions (UserId);
+        CREATE INDEX IX_UserPermissions_ModuleKey ON UserPermissions (ModuleKey);
+    END",
+
+    // 10. UserPermissions Operations Column
+    "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[UserPermissions]') AND name = 'Operations')
+    BEGIN
+        ALTER TABLE UserPermissions ADD Operations NVARCHAR(MAX) NULL DEFAULT '{}';
     END"
 ];
+
 
 $executed = 0;
 foreach ($queries as $sql) {

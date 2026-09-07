@@ -10,6 +10,7 @@ import { FileSystemService } from '../../core/services/file-system.service';
 import { FileSystemItem } from '../../core/models/file-system.model';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-task-modal',
@@ -105,7 +106,7 @@ import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
                           <lucide-icon name="git-fork" class="h-4 w-4 text-purple-600 dark:text-purple-400"></lucide-icon>
                           Sub-Tasks / Split Tasks ({{ subTasks().length }})
                       </h5>
-                      <button *ngIf="childUsers().length > 0" (click)="showAddSubTaskForm.set(!showAddSubTaskForm())" class="text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
+                      <button *ngIf="permissionService.canSplit('tasks') && childUsers().length > 0" (click)="showAddSubTaskForm.set(!showAddSubTaskForm())" class="text-xs bg-purple-600 hover:bg-purple-700 text-white font-medium px-3 py-1.5 rounded-lg transition flex items-center gap-1 shadow-sm">
                           <lucide-icon name="plus" class="h-3.5 w-3.5"></lucide-icon>
                           {{ showAddSubTaskForm() ? 'Cancel' : 'Split / Add Sub-Task' }}
                       </button>
@@ -219,7 +220,7 @@ import { debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
                   </div>
 
                   <!-- Add Comment Input -->
-                  <div class="flex gap-2 pt-2">
+                  <div *ngIf="permissionService.canComment('tasks')" class="flex gap-2 pt-2">
                       <input type="text" [(ngModel)]="newComment" (keyup.enter)="addComment()" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="Write a comment...">
                       <button (click)="addComment()" [disabled]="!newComment.trim()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition shadow-sm flex items-center justify-center">
                           <lucide-icon name="send" class="h-4 w-4"></lucide-icon>
@@ -326,6 +327,7 @@ export class TaskModalComponent {
   private taskService = inject(TaskService);
   private authService = inject(AuthService);
   private fileService = inject(FileSystemService);
+  public permissionService = inject(PermissionService);
 
   isOpen = signal(false);
   users = signal<User[]>([]);

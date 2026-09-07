@@ -8,6 +8,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { FormsModule } from '@angular/forms';
 import Swal from 'sweetalert2';
 import { DragDropModule, CdkDragDrop, moveItemInArray, transferArrayItem } from '@angular/cdk/drag-drop';
+import { PermissionService } from '../../core/services/permission.service';
+import { ToastService } from '../../core/services/toast.service';
 
 export interface BoardSection {
     id: string;
@@ -98,7 +100,7 @@ export interface BoardSection {
                       <span class="text-xs px-2 py-1 rounded-full font-medium" [ngClass]="getSectionStyle(section.color).badge">{{ getTasksForSection(section.id).length }}</span>
                       
                       <!-- Add Task to Section -->
-                      <button (click)="openCreateModal(section.id)" class="p-1 rounded transition flex items-center gap-1 text-xs font-medium" [ngClass]="[getSectionStyle(section.color).btnHover, getSectionStyle(section.color).btnText]" title="Add Task to {{ section.name }}">
+                      <button *ngIf="permissionService.canAdd('tasks')" (click)="openCreateModal(section.id)" class="p-1 rounded transition flex items-center gap-1 text-xs font-medium" [ngClass]="[getSectionStyle(section.color).btnHover, getSectionStyle(section.color).btnText]" title="Add Task to {{ section.name }}">
                          <lucide-icon name="plus" class="h-4 w-4"></lucide-icon>
                       </button>
                       
@@ -122,16 +124,16 @@ export interface BoardSection {
                         <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border hover:shadow-md transition group relative flex flex-col cursor-move"
                              [ngClass]="getSectionStyle(section.color).cardBorder"
                              [class.opacity-75]="section.id === 'Done'"
-                             cdkDrag [cdkDragData]="task">
+                             cdkDrag [cdkDragData]="task" [cdkDragDisabled]="!permissionService.canMove('tasks')">
                             <div class="flex justify-between items-start mb-2">
                                 <span class="text-xs font-semibold px-2 py-0.5 rounded" 
                                       [ngClass]="getPriorityClass(task.priority)">{{ task.priority }}</span>
                                 
                                 <div class="flex gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition">
-                                    <button *ngIf="hasChildUsers() || (task.subTasksCount && task.subTasksCount > 0)" (click)="openCommentsModal(task)" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-purple-600 dark:text-purple-400" title="Split / Manage Sub-Tasks">
+                                    <button *ngIf="permissionService.canSplit('tasks') && (hasChildUsers() || (task.subTasksCount && task.subTasksCount > 0))" (click)="openCommentsModal(task)" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-purple-600 dark:text-purple-400" title="Split / Manage Sub-Tasks">
                                         <lucide-icon name="git-fork" class="h-4 w-4"></lucide-icon>
                                     </button>
-                                    <button (click)="openCommentsModal(task)" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-500" title="Comments">
+                                    <button *ngIf="permissionService.canComment('tasks')" (click)="openCommentsModal(task)" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-500" title="Comments">
                                         <lucide-icon name="message-square" class="h-4 w-4"></lucide-icon>
                                     </button>
                                     <button *ngIf="canEdit(task)" (click)="openEditModal(task)" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-500 dark:text-gray-400" title="Edit">
@@ -139,11 +141,11 @@ export interface BoardSection {
                                     </button>
 
                                     <!-- Previous Section Button -->
-                                    <button *ngIf="canMovePrev(section.id)" (click)="moveTaskToPrevSection(task, section.id)" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-500 dark:text-gray-400" title="Move Back">
+                                    <button *ngIf="permissionService.canMove('tasks') && canMovePrev(section.id)" (click)="moveTaskToPrevSection(task, section.id)" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-gray-500 dark:text-gray-400" title="Move Back">
                                         <lucide-icon name="arrow-left" class="h-4 w-4"></lucide-icon>
                                     </button>
                                     <!-- Next Section Button -->
-                                    <button *ngIf="canMoveNext(section.id)" (click)="moveTaskToNextSection(task, section.id)" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-600 dark:text-blue-400" title="Move Forward">
+                                    <button *ngIf="permissionService.canMove('tasks') && canMoveNext(section.id)" (click)="moveTaskToNextSection(task, section.id)" class="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded text-blue-600 dark:text-blue-400" title="Move Forward">
                                         <lucide-icon name="chevron-right" class="h-4 w-4"></lucide-icon>
                                     </button>
 
@@ -250,6 +252,8 @@ export interface BoardSection {
 export class TaskDashboardComponent implements OnInit {
     private taskService = inject(TaskService);
     public authService = inject(AuthService);
+    public permissionService = inject(PermissionService);
+    private toast = inject(ToastService);
     private route = inject(ActivatedRoute);
     private router = inject(Router);
     private cdr = inject(ChangeDetectorRef);
@@ -824,6 +828,7 @@ export class TaskDashboardComponent implements OnInit {
     }
 
     canEdit(task: Task) {
+        if (!this.permissionService.canUpdate('tasks')) return false;
         const user = this.authService.currentUser();
         if (!user) return false;
         const myId = String(user.id);
@@ -833,6 +838,7 @@ export class TaskDashboardComponent implements OnInit {
     }
 
     canDelete(task: Task) {
+        if (!this.permissionService.canDelete('tasks')) return false;
         const user = this.authService.currentUser();
         if (!user) return false;
         return user.role === 'admin' || String(user.id) === String(task.createdByUserId);
@@ -886,6 +892,10 @@ export class TaskDashboardComponent implements OnInit {
     }
 
     drop(event: CdkDragDrop<Task[]>) {
+        if (!this.permissionService.canMove('tasks')) {
+            this.toast.show('You do not have permission to move tasks', 'error');
+            return;
+        }
         if (event.previousContainer === event.container) {
             moveItemInArray(event.container.data, event.previousIndex, event.currentIndex);
             const map = { ...this.sectionTasksMap() };

@@ -55,6 +55,12 @@ if(isset($data->taskId) && isset($data->status)) {
             }
         }
 
+        // Activity log
+        include_once '../services/ActivityLogger.php';
+        $currentUserId = isset($data->userId) ? $data->userId : null;
+        $taskTitle = isset($subTitle) ? $subTitle : "Task #$taskId";
+        logUserActivity($conn, $currentUserId, 'Tasks', 'Update Task Status', $taskTitle, $taskId, "Changed task status to '$status'");
+
         http_response_code(200);
         echo json_encode(array("message" => "Task status updated successfully."));
     } else {

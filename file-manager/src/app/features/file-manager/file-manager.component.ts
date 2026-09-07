@@ -20,6 +20,7 @@ import { FileUploaderService } from '../../core/services/file-uploader.service';
 import { IconsModule } from '../../core/modules/icons.module';
 import { FilePreviewService } from '../../core/services/file-preview.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-file-manager',
@@ -353,17 +354,17 @@ import { NotificationService } from '../../core/services/notification.service';
               Preview
           </button>
 
-          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="openShareModal(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 first:rounded-t-lg">
+          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared' && permissionService.canShare('files')" (click)="openShareModal(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 first:rounded-t-lg">
               <lucide-icon name="share-2" class="h-4 w-4 text-blue-500"></lucide-icon>
               Share
           </button>
 
-          <button *ngIf="!isTrashView()" (click)="downloadSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <button *ngIf="!isTrashView() && permissionService.canDownload('files')" (click)="downloadSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <lucide-icon name="download" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
               Download
           </button>
           
-          <button *ngIf="!isTrashView()" (click)="toggleStar(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <button *ngIf="!isTrashView() && permissionService.canStar('files')" (click)="toggleStar(selectedItem()!)" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
              <lucide-icon [name]="selectedItem()?.isStarred ? 'star' : 'star'" [class]="selectedItem()?.isStarred ? 'h-4 w-4 text-yellow-400 fill-current' : 'h-4 w-4 text-gray-500 dark:text-gray-400'"></lucide-icon>
              {{ selectedItem()?.isStarred ? 'Remove from Starred' : 'Add to Starred' }}
           </button>
@@ -385,19 +386,19 @@ import { NotificationService } from '../../core/services/notification.service';
              Delete Permanently
           </button>
 
-          <button *ngIf="!isTrashView()" (click)="openMoveDialog()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <button *ngIf="!isTrashView() && permissionService.canMove('files')" (click)="openMoveDialog()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <lucide-icon name="folder-up" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
              Move
           </button>
 
-          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="renameSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared' && permissionService.can('files', 'rename')" (click)="renameSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
               <lucide-icon name="edit-3" class="h-4 w-4 text-gray-500 dark:text-gray-400"></lucide-icon>
              Rename
           </button>
 
          <div *ngIf="!isTrashView()" class="my-1 border-t border-gray-100 dark:border-gray-700"></div>
 
-          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared'" (click)="deleteSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
+          <button *ngIf="!isTrashView() && selectedItem()?.accessType !== 'Shared' && permissionService.canDelete('files')" (click)="deleteSelectedItem()" class="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 flex items-center gap-2 text-sm text-red-600 dark:text-red-400">
              <lucide-icon name="trash-2" class="h-4 w-4 text-red-500"></lucide-icon>
              Delete
           </button>
@@ -471,6 +472,7 @@ import { NotificationService } from '../../core/services/notification.service';
 export class FileManagerComponent implements OnInit {
   public fileService = inject(FileSystemService);
   public authService = inject(AuthService);
+  public permissionService = inject(PermissionService);
   private toast = inject(ToastService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);

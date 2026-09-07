@@ -4,18 +4,20 @@ import { IconsModule } from '../../core/modules/icons.module';
 import { AuthService } from '../../core/services/auth.service';
 import { FileSystemService } from '../../core/services/file-system.service';
 import { FileSystemItem } from '../../core/models/file-system.model';
-import { ReactiveFormsModule, FormControl } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 import { RouterModule, Router } from '@angular/router';
 import { NotificationService } from '../../core/services/notification.service';
 import { FilePreviewService } from '../../core/services/file-preview.service';
+import { ToastService } from '../../core/services/toast.service';
 
 import { LayoutService } from '../../core/services/layout.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, IconsModule, RouterModule, ReactiveFormsModule],
+  imports: [CommonModule, IconsModule, RouterModule, ReactiveFormsModule, FormsModule],
   template: `
     <header class="flex items-center justify-between px-2 md:px-6 h-full gap-2 md:gap-3">
         <!-- Mobile Menu Toggler -->
@@ -65,7 +67,7 @@ import { LayoutService } from '../../core/services/layout.service';
                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-500 dark:text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
                                    }
                                </div>
-                               
+                                
                                <!-- Text (Using flex-col structure that worked in debug) -->
                                <div class="flex-1 min-w-0 flex flex-col">
                                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate" [title]="item.name">{{ item.name }}</span>
@@ -147,18 +149,30 @@ import { LayoutService } from '../../core/services/layout.service';
           </button>
           
           <!-- Dropdown -->
-          <div class="absolute right-0 top-full pt-2 w-48 hidden group-hover:block transition z-50">
+          <div class="absolute right-0 top-full pt-2 w-52 hidden group-hover:block transition z-50">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1 border border-gray-100 dark:border-gray-700">
                 <div class="px-4 py-2 border-b border-gray-50 dark:border-gray-700">
                    <p class="text-sm font-medium text-gray-900 dark:text-gray-200">{{ authService.currentUser()?.name }}</p>
                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ authService.currentUser()?.email }}</p>
                 </div>
                 
-                <a *ngIf="authService.isAdmin()" routerLink="/admin" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
-                   <lucide-icon name="shield" class="h-4 w-4"></lucide-icon>
+                <a *ngIf="authService.isAdmin() || permissionService.canView('users')" routerLink="/admin" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                   <lucide-icon name="shield" class="h-4 w-4 text-purple-600"></lucide-icon>
                    Admin Dashboard
                 </a>
+
+                <a *ngIf="permissionService.canView('history')" routerLink="/user-history" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                    <lucide-icon name="history" class="h-4 w-4 text-indigo-600"></lucide-icon>
+                    User History
+                </a>
+
+                <button (click)="openChangePasswordModal()" class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+                   <lucide-icon name="key" class="h-4 w-4 text-blue-600"></lucide-icon>
+                   Change Password
+                </button>
     
+                <div class="border-t border-gray-100 dark:border-gray-700 my-1"></div>
+
                 <button (click)="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10 flex items-center gap-2">
                    <lucide-icon name="log-out" class="h-4 w-4"></lucide-icon>
                    Sign out
@@ -168,21 +182,188 @@ import { LayoutService } from '../../core/services/layout.service';
         </div>
 
       </div>
+
+      <!-- Change Password Modal -->
+      <div *ngIf="showPasswordModal()" class="fixed inset-0 z-[200] flex items-center justify-center p-4">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" (click)="closeChangePasswordModal()"></div>
+        
+        <!-- Modal Dialog -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between bg-gray-50/50 dark:bg-gray-700/50">
+                <div class="flex items-center gap-2">
+                    <div class="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+                        <lucide-icon name="key" class="h-5 w-5"></lucide-icon>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-semibold text-gray-800 dark:text-white">Change Password</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Update your password across all sessions</p>
+                    </div>
+                </div>
+                <button (click)="closeChangePasswordModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+                    <lucide-icon name="x" class="h-5 w-5"></lucide-icon>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <form (ngSubmit)="submitChangePassword()" class="space-y-4">
+                    <div *ngIf="passwordError()" class="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-600 dark:text-red-400 flex items-center gap-2">
+                        <lucide-icon name="alert-triangle" class="h-4 w-4 shrink-0"></lucide-icon>
+                        <span>{{ passwordError() }}</span>
+                    </div>
+
+                    <!-- Current Password -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wider">Current Password</label>
+                        <div class="relative">
+                            <input [type]="showCurrentPassword() ? 'text' : 'password'" 
+                                   [(ngModel)]="passwordForm.currentPassword" 
+                                   name="currentPassword" 
+                                   required 
+                                   placeholder="Enter current password"
+                                   class="w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                            <button type="button" (click)="showCurrentPassword.set(!showCurrentPassword())" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <lucide-icon [name]="showCurrentPassword() ? 'eye-off' : 'eye'" class="h-4 w-4"></lucide-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- New Password -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wider">New Password</label>
+                        <div class="relative">
+                            <input [type]="showNewPassword() ? 'text' : 'password'" 
+                                   [(ngModel)]="passwordForm.newPassword" 
+                                   name="newPassword" 
+                                   required 
+                                   placeholder="Enter new password (min. 4 chars)"
+                                   class="w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                            <button type="button" (click)="showNewPassword.set(!showNewPassword())" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <lucide-icon [name]="showNewPassword() ? 'eye-off' : 'eye'" class="h-4 w-4"></lucide-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Confirm New Password -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 uppercase tracking-wider">Confirm New Password</label>
+                        <div class="relative">
+                            <input [type]="showConfirmPassword() ? 'text' : 'password'" 
+                                   [(ngModel)]="passwordForm.confirmPassword" 
+                                   name="confirmPassword" 
+                                   required 
+                                   placeholder="Re-enter new password"
+                                   class="w-full px-3 py-2.5 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                            <button type="button" (click)="showConfirmPassword.set(!showConfirmPassword())" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
+                                <lucide-icon [name]="showConfirmPassword() ? 'eye-off' : 'eye'" class="h-4 w-4"></lucide-icon>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-blue-50/70 dark:bg-blue-900/20 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+                        <p class="font-medium">Note:</p>
+                        <p class="mt-0.5">Changing your password will immediately log you out from all devices and browser tabs for security.</p>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-3">
+                        <button type="button" (click)="closeChangePasswordModal()" class="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition font-medium">
+                            Cancel
+                        </button>
+                        <button type="submit" [disabled]="passwordLoading()" class="bg-blue-600 text-white px-5 py-2 text-sm rounded-lg hover:bg-blue-700 transition shadow-sm font-medium disabled:opacity-50 flex items-center gap-2">
+                             <lucide-icon *ngIf="passwordLoading()" name="loader-2" class="h-4 w-4 animate-spin"></lucide-icon>
+                             Update Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+      </div>
     </header>
   `
 })
 export class HeaderComponent implements OnInit {
   authService = inject(AuthService);
+  permissionService = inject(PermissionService);
   fileService = inject(FileSystemService);
   notificationService = inject(NotificationService);
   previewService = inject(FilePreviewService);
   layoutService = inject(LayoutService);
+  toastService = inject(ToastService);
   router = inject(Router);
   searchControl = new FormControl('');
 
   searchResults = signal<FileSystemItem[]>([]);
   showDropdown = signal(false);
   isSearching = signal(false);
+
+  // Change Password Modal state
+  showPasswordModal = signal(false);
+  passwordLoading = signal(false);
+  passwordError = signal('');
+  showCurrentPassword = signal(false);
+  showNewPassword = signal(false);
+  showConfirmPassword = signal(false);
+  passwordForm = {
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  };
+
+  openChangePasswordModal() {
+    this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+    this.passwordError.set('');
+    this.passwordLoading.set(false);
+    this.showCurrentPassword.set(false);
+    this.showNewPassword.set(false);
+    this.showConfirmPassword.set(false);
+    this.showPasswordModal.set(true);
+  }
+
+  closeChangePasswordModal() {
+    this.showPasswordModal.set(false);
+    this.passwordForm = { currentPassword: '', newPassword: '', confirmPassword: '' };
+    this.passwordError.set('');
+  }
+
+  submitChangePassword() {
+    if (!this.passwordForm.currentPassword) {
+      this.passwordError.set('Please enter your current password.');
+      return;
+    }
+    if (!this.passwordForm.newPassword) {
+      this.passwordError.set('Please enter a new password.');
+      return;
+    }
+    if (this.passwordForm.newPassword.length < 4) {
+      this.passwordError.set('New password must be at least 4 characters long.');
+      return;
+    }
+    if (this.passwordForm.newPassword === this.passwordForm.currentPassword) {
+      this.passwordError.set('New password cannot be the same as your current password.');
+      return;
+    }
+    if (this.passwordForm.newPassword !== this.passwordForm.confirmPassword) {
+      this.passwordError.set('Confirm password does not match new password.');
+      return;
+    }
+
+    this.passwordError.set('');
+    this.passwordLoading.set(true);
+
+    this.authService.changePassword(this.passwordForm.currentPassword, this.passwordForm.newPassword).subscribe({
+      next: () => {
+        this.passwordLoading.set(false);
+        this.closeChangePasswordModal();
+        this.toastService.show('Password changed successfully! You have been logged out from all sessions.', 'success', 5000);
+        this.authService.forceLogout('Password changed successfully. Please log in with your new password.');
+      },
+      error: (err) => {
+        this.passwordLoading.set(false);
+        const msg = err.error?.message || err.message || 'Failed to update password.';
+        this.passwordError.set(msg);
+      }
+    });
+  }
 
   ngOnInit() {
     this.searchControl.valueChanges.pipe(

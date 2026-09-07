@@ -5,6 +5,7 @@ import { MastersService } from '../../../core/services/masters.service';
 import { Country } from '../../../core/models/country.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { IconsModule } from '../../../core/modules/icons.module';
+import { PermissionService } from '../../../core/services/permission.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -18,7 +19,7 @@ import Swal from 'sweetalert2';
           <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Country Master</h1>
           <p class="text-gray-500 dark:text-gray-400 text-sm">Manage countries for the administrative hierarchy</p>
         </div>
-        <button (click)="openModal()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-sm">
+        <button *ngIf="permissionService.canAdd('master_country')" (click)="openModal()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition shadow-sm">
           <lucide-icon name="plus" class="h-4 w-4"></lucide-icon>
           Add Country
         </button>
@@ -41,10 +42,10 @@ import Swal from 'sweetalert2';
               <td class="px-6 py-4 text-sm font-medium text-gray-800 dark:text-gray-200">{{ country.name }}</td>
               <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ country.createdAt | date:'mediumDate' }}</td>
               <td class="px-6 py-4 text-right space-x-2">
-                <button (click)="openModal(country)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition">
+                <button *ngIf="permissionService.canUpdate('master_country')" (click)="openModal(country)" class="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition" title="Edit">
                   <lucide-icon name="edit" class="h-4 w-4"></lucide-icon>
                 </button>
-                <button (click)="deleteCountry(country)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition">
+                <button *ngIf="permissionService.canDelete('master_country')" (click)="deleteCountry(country)" class="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition" title="Delete">
                   <lucide-icon name="trash-2" class="h-4 w-4"></lucide-icon>
                 </button>
               </td>
@@ -93,6 +94,7 @@ import Swal from 'sweetalert2';
 export class CountryListComponent implements OnInit {
   private mastersService = inject(MastersService);
   private toast = inject(ToastService);
+  public permissionService = inject(PermissionService);
 
   countries = signal<Country[]>([]);
   isModalOpen = false;

@@ -25,6 +25,11 @@ if(!empty($data->name)) {
 
     if($stmt) {
         $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+        
+        // Log activity
+        include_once '../../services/ActivityLogger.php';
+        logUserActivity($conn, null, 'Masters', 'Create Channel', $data->name, $row['Id'], "Created channel '{$data->name}'");
+
         http_response_code(201);
         echo json_encode(array("message" => "Channel was created.", "id" => $row['Id']));
     } else {

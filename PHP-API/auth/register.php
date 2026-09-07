@@ -23,6 +23,10 @@ if(isset($data->name) && isset($data->password) && isset($data->role)) {
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if($stmt) {
+        // Log activity
+        include_once '../services/ActivityLogger.php';
+        logUserActivity($conn, null, 'Users', 'Create User', $username, null, "Created new user '$username' with role '$role'");
+
         http_response_code(201);
         echo json_encode(array("message" => "User created successfully."));
     } else {

@@ -74,5 +74,16 @@ if($stmt2 === false) {
 
 sqlsrv_commit($conn);
 
+// Log activity
+include_once '../services/ActivityLogger.php';
+$fnStmt = sqlsrv_query($conn, "SELECT FileName, IsFolder FROM Files WHERE Id = ?", array($id));
+$fName = "Item #$id";
+$isFolder = false;
+if ($fnStmt && $fnRow = sqlsrv_fetch_array($fnStmt, SQLSRV_FETCH_ASSOC)) {
+    $fName = $fnRow['FileName'];
+    $isFolder = $fnRow['IsFolder'];
+}
+logUserActivity($conn, $ownerId, 'Files', 'Move to Trash', $fName, $id, "Moved " . ($isFolder ? "folder" : "file") . " '$fName' to Trash");
+
 echo json_encode(array("message" => "Deleted successfully."));
 ?>

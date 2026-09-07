@@ -9,4 +9,5 @@ export interface User {
     avatar?: string;
     parentUserId?: string | null;
     parentName?: string | null;
+    token?: string;
 }

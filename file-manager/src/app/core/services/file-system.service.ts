@@ -93,19 +93,21 @@ export class FileSystemService {
         return of(this.files().find(f => f.id === id));
     }
 
-    createFolder(parentId: string | null, name: string): Observable<FileSystemItem> {
+    createFolder(parentId: string | null, name: string, sharedWithUserIds: string[] = []): Observable<FileSystemItem> {
         const currentUser = this.authService.currentUser();
         if (!currentUser) throw new Error('User not authenticated');
 
-        const payload = {
+        const payload: any = {
             createFolder: true,
             name,
             parentId,
-            ownerId: currentUser.id
+            ownerId: currentUser.id,
+            sharedWithUserIds
         };
 
         return this.http.post<any>(`${this.API_BASE}/upload.php`, payload).pipe(
             map((response) => {
+                const isShared = (sharedWithUserIds && sharedWithUserIds.length > 0) || response.sharedCount > 0;
                 const newFolder: FileSystemItem = {
                     id: response.id, // Use real ID from server (UUID)
                     parentId,
@@ -113,7 +115,9 @@ export class FileSystemService {
                     type: 'folder',
                     lastModified: new Date(),
                     ownerId: currentUser.id,
-                    sharedWith: []
+                    sharedWith: sharedWithUserIds,
+                    isShared: isShared,
+                    accessType: 'Owned'
                 };
 
                 this.files.update(current => [...current, newFolder]);

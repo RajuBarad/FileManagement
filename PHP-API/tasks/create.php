@@ -60,7 +60,11 @@ if(
                 createNotification($conn, $assigneeId, "New Task Assigned", "You have been assigned to task: $title", "TaskAssignment", $taskId);
              }
         }
-        
+
+        // Log activity
+        include_once '../services/ActivityLogger.php';
+        logUserActivity($conn, $createdByUserId, 'Tasks', 'Create Task', $title, $taskId, "Created task '$title' (Priority: $priority, Status: $status)");
+
         http_response_code(201);
         echo json_encode(array("message" => "Task created successfully.", "id" => $taskId));
     } else {

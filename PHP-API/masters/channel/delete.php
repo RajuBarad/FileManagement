@@ -15,6 +15,10 @@ if(!empty($data->id)) {
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if($stmt) {
+        // Log activity
+        include_once '../../services/ActivityLogger.php';
+        logUserActivity($conn, null, 'Masters', 'Delete Channel', "Channel #{$data->id}", $data->id, "Deleted channel #{$data->id}");
+
         http_response_code(200);
         echo json_encode(array("message" => "Channel was deleted."));
     } else {

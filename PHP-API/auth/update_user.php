@@ -34,6 +34,7 @@ if(isset($data->id)) {
     if ($password) {
         $updates[] = "Password = ?";
         $params[] = password_hash($password, PASSWORD_BCRYPT);
+        $updates[] = "AuthToken = NULL";
     }
     if ($hasParent) {
         $updates[] = "ParentUserId = ?";

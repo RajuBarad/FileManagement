@@ -1,22 +1,24 @@
 import { Component, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
-import { LucideAngularModule, Cloud, Plus, Folder, Upload, FolderUp, FileText, FileSpreadsheet, HardDrive, Clock, Star, Trash2, Users } from 'lucide-angular';
+import { LucideAngularModule, Cloud, Plus, Folder, Upload, FolderUp, FileText, FileSpreadsheet, HardDrive, Clock, Star, Trash2, Users, History } from 'lucide-angular';
 import Swal from 'sweetalert2';
 import { FileSystemService } from '../../core/services/file-system.service';
+import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
-import { ModalComponent } from '../modal/modal.component';
+import { CreateFolderModalComponent } from '../create-folder-modal/create-folder-modal.component';
 import { environment } from '../../../environments/environment';
 
 import { IconsModule } from '../../core/modules/icons.module';
 import { FileUploaderService } from '../../core/services/file-uploader.service';
 import { ThemeService } from '../../core/services/theme.service';
 import { LayoutService } from '../../core/services/layout.service';
+import { PermissionService } from '../../core/services/permission.service';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, IconsModule, ModalComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, IconsModule, CreateFolderModalComponent],
   template: `
     <div class="flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 relative transition-colors duration-300 pt-[env(safe-area-inset-top,0px)]">
       
@@ -30,7 +32,7 @@ import { LayoutService } from '../../core/services/layout.service';
 
       <div class="px-6 pb-6">
         
-        <div class="relative">
+        <div *ngIf="permissionService.canUpload('files')" class="relative">
           <button (click)="toggleNewMenu()" class="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-full py-3 px-4 flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md transition shadow-sm mb-2">
             <lucide-icon name="plus" class="h-6 w-6 text-blue-600"></lucide-icon>
             <span class="font-medium">New</span>
@@ -86,20 +88,20 @@ import { LayoutService } from '../../core/services/layout.service';
           <lucide-icon name="trash-2" class="h-5 w-5"></lucide-icon>
           Trash
         </a>
-        <a routerLink="/tasks" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
+        <a *ngIf="permissionService.canView('tasks')" routerLink="/tasks" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
            class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
           <lucide-icon name="check-square" class="h-5 w-5"></lucide-icon>
           Tasks
         </a>
-        <!-- Masters Menu 
-        <a routerLink="/followups" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
+        
+        <a *ngIf="permissionService.canView('followups')" routerLink="/followups" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
            class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
           <lucide-icon name="rotate-ccw" class="h-5 w-5"></lucide-icon>
           Followups
         </a>
 
-        
-        <div class="space-y-1">
+        <!-- Masters Menu (Controlled by Granular Rights) --> 
+        <div *ngIf="permissionService.hasAnyMasterPermission()" class="space-y-1">
           <button (click)="toggleMasters()" class="w-full flex items-center justify-between px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
             <div class="flex items-center gap-3">
               <lucide-icon name="layout-grid" class="h-5 w-5"></lucide-icon>
@@ -109,48 +111,55 @@ import { LayoutService } from '../../core/services/layout.service';
           </button>
           
           <div *ngIf="showMasters()" class="pl-12 space-y-1">
-            <a routerLink="/masters/country" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_country')" routerLink="/masters/country" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Country Master
             </a>
-            <a routerLink="/masters/state" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_state')" routerLink="/masters/state" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               State Master
             </a>
-            <a routerLink="/masters/district" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_district')" routerLink="/masters/district" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               District Master
             </a>
-            <a routerLink="/masters/taluka" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_taluka')" routerLink="/masters/taluka" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Taluka Master
             </a>
-            <a routerLink="/masters/village" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_village')" routerLink="/masters/village" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Village Master
             </a>
-            <a routerLink="/masters/channel" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_channel')" routerLink="/masters/channel" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Channel Master
             </a>
-            <a routerLink="/masters/followup" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_followup')" routerLink="/masters/followup" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Followup Master
             </a>
-            <a routerLink="/masters/scope-of-work" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_scope_of_work')" routerLink="/masters/scope-of-work" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Scope of Work Master
             </a>
-            <a routerLink="/masters/client" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_client')" routerLink="/masters/client" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Client Master
             </a>
-            <a routerLink="/masters/application" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+            <a *ngIf="permissionService.canView('master_application')" routerLink="/masters/application" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Task Master
             </a>
           </div>
-        </div>-->
+        </div>
+
+        <!-- User History / Audit Log Link -->
+        <a *ngIf="permissionService.canView('history')" routerLink="/user-history" routerLinkActive="bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400" (click)="layoutService.closeSidebar()"
+           class="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+          <lucide-icon name="history" class="h-5 w-5 text-indigo-500"></lucide-icon>
+          User History
+        </a>
       </nav>
       
       <!-- Storage widget removed -->
@@ -170,23 +179,24 @@ import { LayoutService } from '../../core/services/layout.service';
          </button>
       </div>
 
-      <app-modal #folderModal
-         title="New Folder" 
-         placeholder="Untitled folder"
+      <!-- Create Folder Modal with Admin User Sharing -->
+      <app-create-folder-modal #folderModal
          (onConfirm)="createFolder($event)">
-      </app-modal>
+      </app-create-folder-modal>
     </div>
   `
 })
 export class SidebarComponent {
   private fileService = inject(FileSystemService);
+  public authService = inject(AuthService);
+  public permissionService = inject(PermissionService);
   private router = inject(Router);
   private toast = inject(ToastService);
   private uploader = inject(FileUploaderService);
   public themeService = inject(ThemeService);
   public layoutService = inject(LayoutService);
 
-  @ViewChild('folderModal') folderModal!: ModalComponent;
+  @ViewChild('folderModal') folderModal!: CreateFolderModalComponent;
   showNewMenu = signal(false);
   showMasters = signal(false);
   projectTitle = environment.projectTitle || 'BVA Drive';
@@ -204,9 +214,19 @@ export class SidebarComponent {
     this.folderModal.open();
   }
 
-  createFolder(name: string) {
-    this.fileService.createFolder(this.fileService.currentFolderId(), name).subscribe(() => {
-      this.toast.show('Folder created');
+  createFolder(event: { name: string; sharedUserIds: string[] } | string) {
+    const name = typeof event === 'string' ? event : event.name;
+    const sharedUserIds = typeof event === 'string' ? [] : (event.sharedUserIds || []);
+
+    this.fileService.createFolder(this.fileService.currentFolderId(), name, sharedUserIds).subscribe({
+      next: () => {
+        if (sharedUserIds.length > 0) {
+          this.toast.show(`Folder created and shared with ${sharedUserIds.length} user(s)`, 'success');
+        } else {
+          this.toast.show('Folder created successfully', 'success');
+        }
+      },
+      error: () => {}
     });
   }
 
