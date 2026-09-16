@@ -35,9 +35,11 @@ if(!empty($data->visitingDate) && !empty($data->visitorName) && !empty($data->vi
         }
     }
 
-    $sql = "INSERT INTO Applications (VisitingDate, VisitorName, MobileNo, VillageId, Description, Reference, ChannelId, FollowupId) 
-            OUTPUT INSERTED.Id VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-    $params = array($data->visitingDate, $data->visitorName, $data->mobileNo, $data->villageId, $data->description, $data->reference, $channelId, $followupId);
+    $clientId = isset($data->clientId) && !empty($data->clientId) ? intval($data->clientId) : null;
+
+    $sql = "INSERT INTO Applications (VisitingDate, VisitorName, MobileNo, VillageId, Description, Reference, ChannelId, FollowupId, ClientId) 
+            OUTPUT INSERTED.Id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    $params = array($data->visitingDate, $data->visitorName, $data->mobileNo, $data->villageId, $data->description, $data->reference, $channelId, $followupId, $clientId);
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if($stmt) {

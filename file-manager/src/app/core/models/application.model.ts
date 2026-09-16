@@ -1,5 +1,7 @@
 export interface Application {
     id?: number;
+    clientId?: number | null;
+    clientName?: string;
     visitingDate: string;
     visitorName: string;
     mobileNo: string;

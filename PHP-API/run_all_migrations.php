@@ -173,6 +173,13 @@ $queries = [
     "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[UserPermissions]') AND name = 'Operations')
     BEGIN
         ALTER TABLE UserPermissions ADD Operations NVARCHAR(MAX) NULL DEFAULT '{}';
+    END",
+
+    // 11. Add ClientId column to Applications
+    "IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Applications]') AND name = 'ClientId')
+    BEGIN
+        ALTER TABLE Applications ADD ClientId INT NULL;
+        ALTER TABLE Applications ADD CONSTRAINT FK_Applications_Client FOREIGN KEY (ClientId) REFERENCES Clients(Id);
     END"
 ];
 

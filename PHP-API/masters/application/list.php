@@ -7,6 +7,7 @@ include_once '../../config/db.php';
 $sql = "SELECT a.Id, a.VisitingDate, a.VisitorName, a.MobileNo, a.VillageId, v.Name as VillageName, 
                t.Id as TalukaId, t.Name as TalukaName, d.Name as DistrictName, s.Name as StateName, c.Name as CountryName,
                a.Description, a.Reference, a.ChannelId, ch.Name as ChannelName, a.FollowupId, f.Name as FollowupName, a.CreatedAt,
+               a.ClientId, cl.Name as ClientName,
                CAST(aa.UserId AS NVARCHAR(20)) as AssigneeId, au.Username as AssigneeName,
                f.IsCompleted as IsCompleted, a.IsClosed as IsClosed
         FROM Applications a 
@@ -15,6 +16,7 @@ $sql = "SELECT a.Id, a.VisitingDate, a.VisitorName, a.MobileNo, a.VillageId, v.N
         JOIN Districts d ON t.DistrictId = d.Id
         JOIN States s ON d.StateId = s.Id
         JOIN Countries c ON s.CountryId = c.Id
+        LEFT JOIN Clients cl ON a.ClientId = cl.Id
         LEFT JOIN Channels ch ON a.ChannelId = ch.Id
         LEFT JOIN Followups f ON a.FollowupId = f.Id
         LEFT JOIN ApplicationAssignments aa ON a.Id = aa.ApplicationId
@@ -34,7 +36,9 @@ while($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         $appsMap[$appId] = array(
             "id" => $row['Id'],
             "visitingDate" => $row['VisitingDate'] ? $row['VisitingDate']->format('Y-m-d') : null,
-            "visitorName" => $row['VisitorName'],
+            "clientId" => $row['ClientId'] ? (int)$row['ClientId'] : null,
+            "clientName" => $row['ClientName'],
+            "visitorName" => !empty($row['VisitorName']) ? $row['VisitorName'] : $row['ClientName'],
             "mobileNo" => $row['MobileNo'],
             "villageId" => $row['VillageId'],
             "villageName" => $row['VillageName'],

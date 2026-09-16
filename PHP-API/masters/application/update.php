@@ -12,9 +12,10 @@ $data = json_decode(file_get_contents("php://input"));
 if(!empty($data->id) && !empty($data->visitingDate) && !empty($data->visitorName) && !empty($data->villageId)) {
     $channelId = isset($data->channelId) && !empty($data->channelId) ? intval($data->channelId) : null;
     $followupId = isset($data->followupId) && !empty($data->followupId) ? intval($data->followupId) : null;
-    $sql = "UPDATE Applications SET VisitingDate = ?, VisitorName = ?, MobileNo = ?, VillageId = ?, Description = ?, Reference = ?, ChannelId = ?, FollowupId = ? 
+    $clientId = isset($data->clientId) && !empty($data->clientId) ? intval($data->clientId) : null;
+    $sql = "UPDATE Applications SET VisitingDate = ?, VisitorName = ?, MobileNo = ?, VillageId = ?, Description = ?, Reference = ?, ChannelId = ?, FollowupId = ?, ClientId = ? 
             WHERE Id = ?";
-    $params = array($data->visitingDate, $data->visitorName, $data->mobileNo, $data->villageId, $data->description, $data->reference, $channelId, $followupId, $data->id);
+    $params = array($data->visitingDate, $data->visitorName, $data->mobileNo, $data->villageId, $data->description, $data->reference, $channelId, $followupId, $clientId, $data->id);
     $stmt = sqlsrv_query($conn, $sql, $params);
 
     if($stmt) {

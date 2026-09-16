@@ -5,6 +5,7 @@ import { MastersService } from '../../../core/services/masters.service';
 import { Application } from '../../../core/models/application.model';
 import { Village } from '../../../core/models/village.model';
 import { Channel } from '../../../core/models/channel.model';
+import { Client } from '../../../core/models/client.model';
 import { ToastService } from '../../../core/services/toast.service';
 import { IconsModule } from '../../../core/modules/icons.module';
 import Swal from 'sweetalert2';
@@ -91,6 +92,9 @@ import { FileSystemItem } from '../../../core/models/file-system.model';
                   <div class="flex flex-col">
                     <div class="flex items-center gap-2">
                       <span class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ app.visitorName }}</span>
+                      <span *ngIf="app.clientId" class="px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/30">
+                        Client
+                      </span>
                       <span *ngIf="app.isClosed" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-gray-100 text-gray-800 dark:bg-gray-800/40 dark:text-gray-400 border border-gray-200 dark:border-gray-700/30">
                         Closed
                       </span>
@@ -321,9 +325,32 @@ import { FileSystemItem } from '../../../core/models/file-system.model';
           </div>
 
           <div class="mb-6">
-            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">Visitor Name</label>
-            <input [(ngModel)]="appForm.visitorName" type="text" placeholder="Enter visitor name" [disabled]="!!editingApplication()?.isClosed"
-                   class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500 transition">
+            <div class="flex justify-between items-center mb-1">
+              <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                Visitor Name <span class="text-red-500">*</span>
+              </label>
+              <span *ngIf="appForm.clientId" class="text-xs text-blue-600 dark:text-blue-400 font-medium flex items-center gap-1">
+                <lucide-icon name="check-circle" size="12"></lucide-icon> Linked to Client Master
+              </span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <select [ngModel]="appForm.clientId" (ngModelChange)="onClientChange($event)" [disabled]="!!editingApplication()?.isClosed"
+                        class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer text-sm">
+                  <option [ngValue]="null">-- Select from Client Master --</option>
+                  <option *ngFor="let c of clients()" [value]="c.id">
+                    {{ c.name }}{{ c.mobileNo ? ' (' + c.mobileNo + ')' : '' }}
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <input [(ngModel)]="appForm.visitorName" type="text" placeholder="Enter visitor name" [disabled]="!!editingApplication()?.isClosed"
+                       class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 outline-none focus:ring-2 focus:ring-blue-500 transition text-sm">
+              </div>
+            </div>
+            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Select a client to automatically map ID, mobile number, and village.</p>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -585,6 +612,7 @@ export class ApplicationListComponent implements OnInit {
   private fileService = inject(FileSystemService);
 
   applications = signal<Application[]>([]);
+  clients = signal<Client[]>([]);
   villages = signal<Village[]>([]);
   channels = signal<Channel[]>([]);
   users = signal<User[]>([]);
@@ -614,6 +642,7 @@ export class ApplicationListComponent implements OnInit {
 
   appForm = {
     visitingDate: new Date().toISOString().split('T')[0],
+    clientId: null as number | null,
     visitorName: '',
     mobileNo: '',
     description: '',
@@ -630,6 +659,7 @@ export class ApplicationListComponent implements OnInit {
 
   ngOnInit() {
     this.loadApplications();
+    this.loadClients();
     this.loadVillages();
     this.loadChannels();
     this.loadUsers();
@@ -671,6 +701,13 @@ export class ApplicationListComponent implements OnInit {
     });
   }
 
+  loadClients() {
+    this.mastersService.getClients().subscribe({
+      next: (data) => this.clients.set(data),
+      error: () => this.toast.show('Failed to load clients', 'error')
+    });
+  }
+
   checkAndOpenApplication(appId: number) {
     const app = this.applications().find(a => a.id === appId);
     if (app) {
@@ -709,6 +746,23 @@ export class ApplicationListComponent implements OnInit {
     return this.filteredApplications().filter(app => app.channelId === channelId);
   }
 
+  onClientChange(clientId: any) {
+    const id = Number(clientId);
+    this.appForm.clientId = id > 0 ? id : null;
+    if (id > 0) {
+      const client = this.clients().find(c => Number(c.id) === id);
+      if (client) {
+        this.appForm.visitorName = client.name;
+        if (client.mobileNo) {
+          this.appForm.mobileNo = client.mobileNo;
+        }
+        if (client.villageId) {
+          this.selectedVillageId.set(Number(client.villageId));
+        }
+      }
+    }
+  }
+
   onVillageChange(id: any) {
     this.selectedVillageId.set(Number(id));
   }
@@ -733,6 +787,7 @@ export class ApplicationListComponent implements OnInit {
       this.assignedUserIds = app.assignees ? app.assignees.map(a => Number(a.id)) : [];
       this.appForm = {
         visitingDate: app.visitingDate,
+        clientId: app.clientId || null,
         visitorName: app.visitorName,
         mobileNo: app.mobileNo,
         description: app.description,
@@ -747,6 +802,7 @@ export class ApplicationListComponent implements OnInit {
       const defaultChannel = this.channels().find(c => c.isDefault);
       this.appForm = {
         visitingDate: new Date().toISOString().split('T')[0],
+        clientId: null,
         visitorName: '',
         mobileNo: '',
         description: '',
@@ -765,6 +821,7 @@ export class ApplicationListComponent implements OnInit {
   saveApplication() {
     const payload = { 
       ...this.appForm, 
+      clientId: this.appForm.clientId ? Number(this.appForm.clientId) : null,
       villageId: this.selectedVillageId(),
       id: this.editingApplication()?.id,
       assignedToUserIds: this.assignedUserIds

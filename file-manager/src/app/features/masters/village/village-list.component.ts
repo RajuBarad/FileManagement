@@ -101,7 +101,7 @@ import Swal from 'sweetalert2';
           <div class="grid grid-cols-1 gap-4">
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Country</label>
-              <select [(ngModel)]="selection.countryId" (change)="onCountryChange()"
+              <select [ngModel]="selectedCountryId()" (ngModelChange)="onCountryChange($event)"
                       class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition cursor-pointer text-sm">
                 <option [value]="0">Select Country</option>
                 <option *ngFor="let c of countries()" [value]="c.id">{{ c.name }}</option>
@@ -110,7 +110,7 @@ import Swal from 'sweetalert2';
 
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">State</label>
-              <select [(ngModel)]="selection.stateId" (change)="onStateChange()" [disabled]="!selection.countryId"
+              <select [ngModel]="selectedStateId()" (ngModelChange)="onStateChange($event)" [disabled]="!selectedCountryId()"
                       class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition cursor-pointer text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50">
                 <option [value]="0">Select State</option>
                 <option *ngFor="let s of filteredStates()" [value]="s.id">{{ s.name }}</option>
@@ -119,7 +119,7 @@ import Swal from 'sweetalert2';
 
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">District</label>
-              <select [(ngModel)]="selection.districtId" (change)="onDistrictChange()" [disabled]="!selection.stateId"
+              <select [ngModel]="selectedDistrictId()" (ngModelChange)="onDistrictChange($event)" [disabled]="!selectedStateId()"
                       class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition cursor-pointer text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50">
                 <option [value]="0">Select District</option>
                 <option *ngFor="let d of filteredDistricts()" [value]="d.id">{{ d.name }}</option>
@@ -128,7 +128,7 @@ import Swal from 'sweetalert2';
 
             <div>
               <label class="block text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1.5">Taluka</label>
-              <select [(ngModel)]="villageForm.talukaId" [disabled]="!selection.districtId"
+              <select [(ngModel)]="villageForm.talukaId" [disabled]="!selectedDistrictId()"
                       class="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-blue-500 outline-none transition cursor-pointer text-sm disabled:bg-gray-50 dark:disabled:bg-gray-800/50">
                 <option [value]="0">Select Taluka</option>
                 <option *ngFor="let t of filteredTalukas()" [value]="t.id">{{ t.name }}</option>
@@ -145,7 +145,7 @@ import Swal from 'sweetalert2';
 
         <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 flex justify-end gap-3 shrink-0 border-t border-gray-100 dark:border-gray-700">
           <button (click)="closeModal()" class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition font-medium">Cancel</button>
-          <button (click)="saveVillage()" [disabled]="!villageForm.name || !villageForm.talukaId" 
+          <button (click)="saveVillage()" [disabled]="!villageForm.name.trim() || !Number(villageForm.talukaId)" 
                   class="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg transition font-medium shadow-sm">
             {{ editingVillage ? 'Update' : 'Save' }}
           </button>
@@ -157,6 +157,7 @@ import Swal from 'sweetalert2';
 export class VillageListComponent implements OnInit {
   private mastersService = inject(MastersService);
   private toast = inject(ToastService);
+  readonly Number = Number;
 
   villages = signal<Village[]>([]);
   countries = signal<Country[]>([]);
@@ -168,15 +169,24 @@ export class VillageListComponent implements OnInit {
   editingVillage: Village | null = null;
   villageForm = { name: '', talukaId: 0 };
   
-  selection = {
-    countryId: 0,
-    stateId: 0,
-    districtId: 0
-  };
+  selectedCountryId = signal<number>(0);
+  selectedStateId = signal<number>(0);
+  selectedDistrictId = signal<number>(0);
 
-  filteredStates = computed(() => this.states().filter(s => s.countryId === Number(this.selection.countryId)));
-  filteredDistricts = computed(() => this.districts().filter(d => d.stateId === Number(this.selection.stateId)));
-  filteredTalukas = computed(() => this.talukas().filter(t => t.districtId === Number(this.selection.districtId)));
+  filteredStates = computed(() => {
+    const cId = Number(this.selectedCountryId());
+    return this.states().filter(s => Number(s.countryId) === cId);
+  });
+
+  filteredDistricts = computed(() => {
+    const sId = Number(this.selectedStateId());
+    return this.districts().filter(d => Number(d.stateId) === sId);
+  });
+
+  filteredTalukas = computed(() => {
+    const dId = Number(this.selectedDistrictId());
+    return this.talukas().filter(t => Number(t.districtId) === dId);
+  });
 
   ngOnInit() {
     this.loadVillages();
@@ -198,32 +208,48 @@ export class VillageListComponent implements OnInit {
   loadDistricts() { this.mastersService.getDistricts().subscribe(d => this.districts.set(d)); }
   loadTalukas() { this.mastersService.getTalukas().subscribe(d => this.talukas.set(d)); }
 
-  onCountryChange() { this.selection.stateId = 0; this.selection.districtId = 0; this.villageForm.talukaId = 0; }
-  onStateChange() { this.selection.districtId = 0; this.villageForm.talukaId = 0; }
-  onDistrictChange() { this.villageForm.talukaId = 0; }
+  onCountryChange(val: any) {
+    this.selectedCountryId.set(Number(val));
+    this.selectedStateId.set(0);
+    this.selectedDistrictId.set(0);
+    this.villageForm.talukaId = 0;
+  }
+
+  onStateChange(val: any) {
+    this.selectedStateId.set(Number(val));
+    this.selectedDistrictId.set(0);
+    this.villageForm.talukaId = 0;
+  }
+
+  onDistrictChange(val: any) {
+    this.selectedDistrictId.set(Number(val));
+    this.villageForm.talukaId = 0;
+  }
 
   openModal(village?: Village) {
     if (village) {
       this.editingVillage = village;
-      this.villageForm = { name: village.name, talukaId: village.talukaId };
+      this.villageForm = { name: village.name, talukaId: Number(village.talukaId) };
       
       // Auto-set hierarchy for editing
-      const taluka = this.talukas().find(t => t.id === village.talukaId);
+      const taluka = this.talukas().find(t => Number(t.id) === Number(village.talukaId));
       if (taluka) {
-        this.selection.districtId = taluka.districtId;
-        const dist = this.districts().find(d => d.id === taluka.districtId);
+        this.selectedDistrictId.set(Number(taluka.districtId));
+        const dist = this.districts().find(d => Number(d.id) === Number(taluka.districtId));
         if (dist) {
-          this.selection.stateId = dist.stateId;
-          const state = this.states().find(s => s.id === dist.stateId);
+          this.selectedStateId.set(Number(dist.stateId));
+          const state = this.states().find(s => Number(s.id) === Number(dist.stateId));
           if (state) {
-            this.selection.countryId = state.countryId;
+            this.selectedCountryId.set(Number(state.countryId));
           }
         }
       }
     } else {
       this.editingVillage = null;
       this.villageForm = { name: '', talukaId: 0 };
-      this.selection = { countryId: 0, stateId: 0, districtId: 0 };
+      this.selectedCountryId.set(0);
+      this.selectedStateId.set(0);
+      this.selectedDistrictId.set(0);
     }
     this.isModalOpen = true;
   }
@@ -232,12 +258,19 @@ export class VillageListComponent implements OnInit {
     this.isModalOpen = false;
     this.editingVillage = null;
     this.villageForm = { name: '', talukaId: 0 };
-    this.selection = { countryId: 0, stateId: 0, districtId: 0 };
+    this.selectedCountryId.set(0);
+    this.selectedStateId.set(0);
+    this.selectedDistrictId.set(0);
   }
 
   saveVillage() {
+    const payload = {
+      name: this.villageForm.name.trim(),
+      talukaId: Number(this.villageForm.talukaId)
+    };
+
     if (this.editingVillage) {
-      this.mastersService.updateVillage({ ...this.editingVillage, name: this.villageForm.name, talukaId: this.villageForm.talukaId })
+      this.mastersService.updateVillage({ ...this.editingVillage, ...payload })
         .subscribe({
           next: () => {
             this.toast.show('Village updated successfully');
@@ -247,7 +280,7 @@ export class VillageListComponent implements OnInit {
           error: () => this.toast.show('Failed to update village', 'error')
         });
     } else {
-      this.mastersService.createVillage(this.villageForm)
+      this.mastersService.createVillage(payload)
         .subscribe({
           next: () => {
             this.toast.show('Village created successfully');
