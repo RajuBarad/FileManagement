@@ -13,6 +13,7 @@ import { Application } from '../models/application.model';
 import { ScopeOfWork } from '../models/scope-of-work.model';
 import { Client } from '../models/client.model';
 import { Followup } from '../models/followup.model';
+import { Invoice } from '../models/invoice.model';
 
 @Injectable({
     providedIn: 'root'
@@ -303,5 +304,35 @@ export class MastersService {
 
     reopenApplication(id: number): Observable<any> {
         return this.http.post(`${this.API_BASE}/application/reopen_task.php`, { id });
+    }
+
+    // Invoice / Bill Methods
+    getInvoices(): Observable<Invoice[]> {
+        return this.http.get<any[]>(`${this.API_BASE}/invoice/list.php`).pipe(
+            map(data => data.map(inv => ({
+                ...inv,
+                id: Number(inv.id),
+                clientId: inv.clientId ? Number(inv.clientId) : null,
+                professionalFees: Number(inv.professionalFees || 0),
+                outOfPocketExpenses: Number(inv.outOfPocketExpenses || 0),
+                totalAmount: Number(inv.totalAmount || 0)
+            })))
+        );
+    }
+
+    createInvoice(invoice: Partial<Invoice>): Observable<any> {
+        return this.http.post(`${this.API_BASE}/invoice/create.php`, invoice);
+    }
+
+    updateInvoice(invoice: Partial<Invoice>): Observable<any> {
+        return this.http.post(`${this.API_BASE}/invoice/update.php`, invoice);
+    }
+
+    deleteInvoice(id: number): Observable<any> {
+        return this.http.post(`${this.API_BASE}/invoice/delete.php`, { id });
+    }
+
+    getNextInvoiceNumber(): Observable<{ nextInvoiceNo: string }> {
+        return this.http.get<{ nextInvoiceNo: string }>(`${this.API_BASE}/invoice/get_next_number.php`);
     }
 }

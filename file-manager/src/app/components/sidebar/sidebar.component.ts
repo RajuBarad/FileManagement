@@ -151,6 +151,10 @@ import { PermissionService } from '../../core/services/permission.service';
                class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
               Task Master
             </a>
+            <a *ngIf="permissionService.canView('master_invoice')" routerLink="/masters/invoice" routerLinkActive="text-blue-600 dark:text-blue-400 font-semibold" (click)="layoutService.closeSidebar()"
+               class="block py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition">
+              Invoice / Bill Master
+            </a>
           </div>
         </div>
 

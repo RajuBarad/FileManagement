@@ -129,6 +129,12 @@ export const routes: Routes = [
                 loadComponent: () => import('./features/masters/application/application-list.component').then(m => m.ApplicationListComponent),
                 canActivate: [() => import('./core/guards/permission.guard').then(m => m.permissionGuard)],
                 data: { moduleKey: 'master_application' }
+            },
+            {
+                path: 'masters/invoice',
+                loadComponent: () => import('./features/masters/invoice/invoice-list.component').then(m => m.InvoiceListComponent),
+                canActivate: [() => import('./core/guards/permission.guard').then(m => m.permissionGuard)],
+                data: { moduleKey: 'master_invoice' }
             }
         ]
     },

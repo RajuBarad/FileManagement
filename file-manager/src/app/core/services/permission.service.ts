@@ -154,7 +154,8 @@ export class PermissionService {
     const map = this.permissionsMap();
     const masterKeys = [
       'master_country', 'master_state', 'master_district', 'master_taluka', 'master_village',
-      'master_channel', 'master_followup', 'master_scope_of_work', 'master_client', 'master_application'
+      'master_channel', 'master_followup', 'master_scope_of_work', 'master_client', 'master_application',
+      'master_invoice'
     ];
 
     return masterKeys.some(k => map[k]?.['canView'] ?? map[k]?.['view']);

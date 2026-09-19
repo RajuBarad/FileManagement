@@ -215,6 +215,19 @@ $allModules = [
             ["key" => "edit", "label" => "Edit"],
             ["key" => "delete", "label" => "Delete"]
         ]
+    ],
+    [
+        "moduleKey" => "master_invoice",
+        "moduleName" => "Invoice / Bill Master",
+        "category" => "Masters",
+        "description" => "Manage professional service bills, expenses, and invoices",
+        "availableOperations" => [
+            ["key" => "view", "label" => "View"],
+            ["key" => "add", "label" => "Add"],
+            ["key" => "edit", "label" => "Edit"],
+            ["key" => "delete", "label" => "Delete"],
+            ["key" => "print", "label" => "Print / Export"]
+        ]
     ]
 ];
 

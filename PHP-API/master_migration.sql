@@ -286,4 +286,61 @@ BEGIN
 END
 GO
 
+-- 9. Invoices / Bills Master Table
+IF NOT EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[Invoices]') AND type in (N'U'))
+BEGIN
+    CREATE TABLE Invoices (
+        Id INT IDENTITY(1,1) PRIMARY KEY,
+        InvoiceNo NVARCHAR(100) NOT NULL UNIQUE,
+        InvoiceDate DATE NOT NULL,
+        ClientId INT NULL,
+        ClientName NVARCHAR(255) NOT NULL,
+        ClientAddress NVARCHAR(MAX) NULL,
+        PanNo NVARCHAR(50) NULL,
+        Gstin NVARCHAR(100) NULL,
+        ParticularsTitle NVARCHAR(255) DEFAULT 'Bill for Professional Services',
+        Matter NVARCHAR(255) NULL,
+        PaymentType NVARCHAR(100) NULL,
+        ProfessionalFees DECIMAL(18,2) DEFAULT 0,
+        OutOfPocketExpenses DECIMAL(18,2) DEFAULT 0,
+        ExpensesNote NVARCHAR(MAX) NULL,
+        FeeItems NVARCHAR(MAX) NULL,
+        ExpenseItems NVARCHAR(MAX) NULL,
+        TotalAmount DECIMAL(18,2) DEFAULT 0,
+        AmountInWords NVARCHAR(255) NULL,
+        BankName NVARCHAR(255) DEFAULT 'Bank of India, Bedipara Br., Rajkot',
+        AccountName NVARCHAR(255) DEFAULT 'Bharat Vasoya & Associates',
+        AccountNo NVARCHAR(100) DEFAULT '310820110000514',
+        IfscCode NVARCHAR(50) DEFAULT 'BKID0003108',
+        FirmPan NVARCHAR(50) DEFAULT 'AAHFB3723C',
+        Jurisdiction NVARCHAR(100) DEFAULT 'Rajkot City',
+        Status NVARCHAR(50) DEFAULT 'Pending',
+        Remarks NVARCHAR(MAX) NULL,
+        CreatedAt DATETIME DEFAULT GETDATE(),
+        UpdatedAt DATETIME DEFAULT GETDATE()
+    );
+
+    CREATE INDEX IX_Invoices_InvoiceNo ON Invoices(InvoiceNo);
+    CREATE INDEX IX_Invoices_ClientId ON Invoices(ClientId);
+    CREATE INDEX IX_Invoices_InvoiceDate ON Invoices(InvoiceDate DESC);
+
+    PRINT 'Created Invoices table.';
+END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Invoices]') AND name = 'FeeItems')
+    BEGIN
+        ALTER TABLE Invoices ADD FeeItems NVARCHAR(MAX) NULL;
+        PRINT 'Added FeeItems column to Invoices table.';
+    END
+
+    IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[Invoices]') AND name = 'ExpenseItems')
+    BEGIN
+        ALTER TABLE Invoices ADD ExpenseItems NVARCHAR(MAX) NULL;
+        PRINT 'Added ExpenseItems column to Invoices table.';
+    END
+END
+GO
+
 PRINT 'Master migration completed successfully.';
+

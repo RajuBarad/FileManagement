@@ -34,7 +34,8 @@ $isAdmin = (strtolower($user['Role'] ?? '') === 'admin');
 $standardKeys = [
     "files", "tasks", "followups", "history", "users",
     "master_country", "master_state", "master_district", "master_taluka", "master_village",
-    "master_channel", "master_followup", "master_scope_of_work", "master_client", "master_application"
+    "master_channel", "master_followup", "master_scope_of_work", "master_client", "master_application",
+    "master_invoice"
 ];
 
 $permissionsMap = [];

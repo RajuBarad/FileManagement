@@ -33,7 +33,7 @@ import { PermissionService } from '../../core/services/permission.service';
 
       <div class="flex-1 flex flex-col min-w-0">
         <app-header class="h-[calc(4rem+env(safe-area-inset-top,0px))] pt-[env(safe-area-inset-top,0px)] flex-shrink-0 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 relative z-20"></app-header>
-        <main class="flex-1 overflow-auto p-4 md:p-6 relative bg-gray-50 dark:bg-gray-900 z-10">
+        <main class="flex-1 overflow-auto p-4 md:p-6 relative bg-gray-50 dark:bg-gray-900">
           <router-outlet></router-outlet>
           <app-toast-container></app-toast-container>
         </main>
